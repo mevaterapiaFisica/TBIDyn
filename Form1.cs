@@ -29,15 +29,16 @@ namespace TBIDyn
             Ecl.Application app = Ecl.Application.CreateApplication("paberbuj", "123qwe");
             var paciente = app.OpenPatientById("1-107087-0");
             var curso = paciente.Courses.First(c => c.Id.Contains("C0"));
-            var plan = curso.PlanSetups.First(p => p.Id == "TBI Ant");
-
+            var planAnt = curso.PlanSetups.First(p => p.Id == "TBI Ant");
+            var planPost = curso.PlanSetups.First(p => p.Id == "TBI Post");
+            var arcos = Arco.extraerArcos(planAnt, planPost);
             //var export = Perfiles(plan);
-            var pulmones = InicioFinLungs(plan);
-            var perfiles = Perfiles50Central(plan,"BODY");
-            File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\coords.txt", export.ToArray());
+            var pulmones = InicioFinLungs(planAnt);
+            var perfiles = Perfiles50Central(planAnt, "BODY");
+            File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\coords.txt", perfiles.ToArray());
             /*var exportL = Perfiles50Central(plan, "Lungs");
             File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\coordsL.txt", exportL.ToArray());*/
-            
+
 
             DcmTBIDin();
 
@@ -98,24 +99,23 @@ namespace TBIDyn
             return export;
         }
 
-
         public static Tuple<double, double> InicioFinLungs(Ecl.PlanSetup plan)
         {
             var lungs = plan.StructureSet.Structures.First(s => s.Id == "Lungs");
             var cortes = plan.StructureSet.Image.Series.Images.Count() - 1;
             double inicio = double.NaN;
             double fin = double.NaN;
-            
+
             for (int i = 0; i < cortes; i++)
             {
                 var corte = lungs.GetContoursOnImagePlane(i);
-                if (corte.Length>0)
+                if (corte.Length > 0)
                 {
                     if (double.IsNaN(inicio))
                     {
                         inicio = corte.First().First().z;
                     }
-                    if (double.IsNaN(fin) || corte.First().First().z>fin)
+                    if (double.IsNaN(fin) || corte.First().First().z > fin)
                     {
                         fin = corte.First().First().z;
                     }
@@ -141,7 +141,7 @@ namespace TBIDyn
                 if (corte.Length > 0)
                 {
                     VVector[] curva = corte.OrderBy(c => c.Length).Last();
-                    if (HayBodyEnXOrigin(curva,userOrgin))
+                    if (HayBodyEnXOrigin(curva, userOrgin))
                     {
                         Tuple<double, double> promedios = PromediosCurva(curva);
                         export.Add(curva.First().z.ToString() + ";" + promedios.Item1.ToString() + ";" + promedios.Item2.ToString());
@@ -150,7 +150,7 @@ namespace TBIDyn
                     {
                         List<double> promediosSup = new List<double>();
                         List<double> promediosInf = new List<double>();
-                        for (int j=0;j<corte.Length;j++)
+                        for (int j = 0; j < corte.Length; j++)
                         {
                             var curvaN = corte[j];
                             Tuple<double, double> promedios = PromediosCurva(curvaN);
@@ -159,13 +159,13 @@ namespace TBIDyn
                         }
                         export.Add(curva.First().z.ToString() + ";" + promediosSup.Average().ToString() + ";" + promediosInf.Average().ToString());
                     }
-                    
+
                 }
             }
             return export;
         }
 
-        public static bool HayBodyEnXOrigin(VVector[] curva,VVector userOrigin)
+        public static bool HayBodyEnXOrigin(VVector[] curva, VVector userOrigin)
         {
             for (int j = 1; j < curva.Length; j++)
             {
@@ -177,7 +177,7 @@ namespace TBIDyn
             return false;
         }
 
-        public static Tuple<double,double> PromediosCurva(VVector[] curva)
+        public static Tuple<double, double> PromediosCurva(VVector[] curva)
         {
             double xmin = curva.OrderBy(c => c.x).First().x;
             double xmax = curva.OrderBy(c => c.x).Last().x;
@@ -244,6 +244,49 @@ namespace TBIDyn
             }
             //Beam1.AddOrUpdate(DicomTag.NumberOfControlPoints, cpSequence.Count());
             file.Save(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\out.dcm");
+        }
+
+        public class Arco
+        {
+            string Nombre;
+            double GantryInicio;
+            double GantryFin;
+            double UMs;
+
+            public Arco(Ecl.PlanSetup plan, string nombre)
+            {
+                List<Ecl.Beam> arcos = plan.Beams.Where(b => b.Id.ToLower().Contains(nombre.ToLower())).ToList();
+                Nombre = nombre;
+                GantryInicio = arcos.First().ControlPoints.First().GantryAngle;
+                GantryFin = arcos.First().ControlPoints.Last().GantryAngle;
+                foreach (var arco in arcos)
+                {
+                    if ((arco.ControlPoints.First().GantryAngle == GantryInicio || arco.ControlPoints.First().GantryAngle == GantryFin) && (arco.ControlPoints.Last().GantryAngle == GantryInicio || arco.ControlPoints.Last().GantryAngle == GantryFin))
+                    {
+                        UMs += arco.Meterset.Value;
+                    }
+                }
+            }
+            public override string ToString()
+            {
+                return Nombre + "-" + GantryInicio.ToString() + "-" + GantryFin.ToString() + "-" + UMs.ToString();
+            }
+
+            public static List<Arco> extraerArcos(Ecl.PlanSetup planAnt, Ecl.PlanSetup planPost)
+            {
+                List<Arco> arcos = new List<Arco>();
+                string[] nombresAnt = new string[] { "ant1", "ant2", "ant3", "ant4" };
+                string[] nombresPost = new string[] { "post1", "post2", "post3", "post4" };
+                foreach (string nombreAnt in nombresAnt)
+                {
+                    arcos.Add(new Arco(planAnt, nombreAnt));
+                }
+                foreach (string nombrePost in nombresPost)
+                {
+                    arcos.Add(new Arco(planPost,nombrePost));
+                }
+                return arcos;
+            }
         }
     }
 }
