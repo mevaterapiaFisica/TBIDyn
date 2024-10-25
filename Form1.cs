@@ -53,7 +53,7 @@ namespace TBIDyn
                 app.ClosePatient();
             }
             File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\salida.txt", salidas);
-            
+
             var elap = sw.Elapsed;
             DcmTBIDin();
             InitializeComponent();
@@ -115,6 +115,13 @@ namespace TBIDyn
 
         public static Tuple<double, double> InicioFinLungs(Ecl.PlanSetup plan)
         {
+            if (!plan.StructureSet.Structures.Any(s => s.Id == "Lungs"))
+            {
+                var curso = plan.Course;
+                var paciente = curso.Patient;
+                var ss = plan.StructureSet.Structures;
+                return null;
+            }
             var lungs = plan.StructureSet.Structures.First(s => s.Id == "Lungs");
             var cortes = plan.StructureSet.Image.Series.Images.Count() - 1;
             double inicio = double.NaN;
@@ -134,6 +141,10 @@ namespace TBIDyn
                         fin = corte.First().First().z;
                     }
                 }
+
+            }
+            if (double.IsNaN(inicio) || double.IsNaN(fin))
+            {
 
             }
             return new Tuple<double, double>(inicio, fin);
@@ -178,48 +189,47 @@ namespace TBIDyn
             return export;
         }
 
-        public static List<double> Diametros50Central(Ecl.PlanSetup plan, string estructura)
+        public static List<Tuple<double, double>> Diametros50Central(Ecl.PlanSetup plan, string estructura)
         {
             var body = plan.StructureSet.Structures.First(s => s.Id == estructura);
             //var ss = plan.StructureSet.Structures;
             var cortes = plan.StructureSet.Image.Series.Images.Count() - 1;
-            VVector userOrgin = plan.StructureSet.Image.UserOrigin;
+            VVector userOrigin = plan.StructureSet.Image.UserOrigin;
             var limitesPulmon = InicioFinLungs(plan);
+            var CurvaHU = Hu2Densidad.CurvaHU();
             //List<VVector[][]> lista = new List<VVector[][]>();
-            List<Tuple<double, double>> diametros = new List<Tuple<double, double>>();
+            //List<Tuple<double, double>> diametros = new List<Tuple<double, double>>();
+            List<Tuple<double, double>> diametros50 = new List<Tuple<double, double>>();
+            //List<Tuple<double, double>> diametrosCent = new List<Tuple<double, double>>();
             for (int i = 0; i < cortes; i++)
             {
                 var corte = body.GetContoursOnImagePlane(i);
                 if (corte.Length > 0)
                 {
                     VVector[] curva = corte.OrderBy(c => c.Length).Last();
-                    if (HayBodyEnXOrigin(curva, userOrgin))
+                    if (HayBodyEnXOrigin(curva, userOrigin))
                     {
-                        Tuple<double, double> promedios = PromediosCurva(curva);
-                        //export.Add(curva.First().z.ToString() + ";" + promedios.Item1.ToString() + ";" + promedios.Item2.ToString());
-                        diametros.Add(new Tuple<double,double>(promedios.Item1 - promedios.Item2, curva.First().z));
+                        diametros50.Add(diametros50Curva(curva, userOrigin, plan.StructureSet.Image,CurvaHU));
                     }
                     else
                     {
-                        List<double> promediosSup = new List<double>();
-                        List<double> promediosInf = new List<double>();
+                        List<double> diamsCorte = new List<double>();
                         for (int j = 0; j < corte.Length; j++)
                         {
                             var curvaN = corte[j];
-                            Tuple<double, double> promedios = PromediosCurva(curvaN);
-                            promediosSup.Add(promedios.Item1);
-                            promediosInf.Add(promedios.Item2);
+                            var diam = diametros50Curva(curvaN, userOrigin, plan.StructureSet.Image, CurvaHU);
+                            diamsCorte.Add(diam.Item1);
                         }
-                        diametros.Add(new Tuple<double, double>(promediosSup.Average()- promediosInf.Average(), curva.First().z));
+                        diametros50.Add(new Tuple<double, double>(diamsCorte.Average(), Math.Round(curva.First().z - userOrigin.z,0)));
                     }
                 }
             }
-            double zInf = diametros.OrderBy(d => d.Item2).First().Item2;
-            double diam1 = diametros.Where(d => d.Item2 > limitesPulmon.Item2).Average(d=>d.Item1);
-            double diam2 = diametros.Where(d => d.Item2 < limitesPulmon.Item2 && d.Item2> limitesPulmon.Item1).Average(d => d.Item1);
-            double diam3 = diametros.Where(d => d.Item2 <limitesPulmon.Item1 && d.Item2>userOrgin.z).Average(d => d.Item1);
+            /*double zInf = diametros.OrderBy(d => d.Item2).First().Item2;
+            double diam1 = diametros.Where(d => d.Item2 > limitesPulmon.Item2).Average(d => d.Item1);
+            double diam2 = diametros.Where(d => d.Item2 < limitesPulmon.Item2 && d.Item2 > limitesPulmon.Item1).Average(d => d.Item1);
+            double diam3 = diametros.Where(d => d.Item2 < limitesPulmon.Item1 && d.Item2 > userOrgin.z).Average(d => d.Item1);
             double ultimaMitad = (userOrgin.z - zInf) / 2;
-            double diam4 = diametros.Where(d => d.Item2 < userOrgin.z && d.Item2> userOrgin.z-ultimaMitad).Average(d => d.Item1);
+            double diam4 = diametros.Where(d => d.Item2 < userOrgin.z && d.Item2 > userOrgin.z - ultimaMitad).Average(d => d.Item1);
             double diam5 = diametros.Where(d => d.Item2 < userOrgin.z - ultimaMitad).Average(d => d.Item1);
             List<double> diams = new List<double>();
             diams.Add(diam1);
@@ -227,29 +237,81 @@ namespace TBIDyn
             diams.Add(diam3);
             diams.Add(diam4);
             diams.Add(diam5);
-            return diams;
+            return diams;*/
+            return diametros50;
         }
+
+        private static Tuple<double,double> diametros50Curva(VVector[] curva,VVector userOrigin,Ecl.Image ct, List<Hu2Densidad.PuntoCurva> CurvaHU)
+        {
+            double xmin = curva.OrderBy(c => c.x).First().x;
+            double xmax = curva.OrderBy(c => c.x).Last().x;
+            double longitud = Math.Abs(xmax - xmin);
+            double centroMenos50 = xmin + longitud / 4;
+            double centroMas50 = xmin + 3* longitud / 4;
+
+
+            VVector[] curvaR = curva.Where(c => c.x > centroMenos50 && c.x < centroMas50).Select(c => new VVector(Math.Round(c.x, 2), Math.Round(c.y, 2), c.z)).ToArray();
+            
+            var agrupados = curvaR.GroupBy(c => c.x).Distinct().ToList();
+            List<double> listDiams = new List<double>();
+            foreach (var agrupado in agrupados)
+            {
+                if (agrupado.Count() == 2)
+                {
+                    listDiams.Add(WED(agrupado.ElementAt(0), agrupado.ElementAt(1), ct,CurvaHU));
+                    //listDiams.Add(Math.Round(Math.Abs(agrupado.ElementAt(0).y - agrupado.ElementAt(1).y)));
+                }
+            }
+            return new Tuple<double, double>(listDiams.Average(), Math.Round(curva.First().z - userOrigin.z,1));
+        }
+
+        public static double WED(VVector punto1, VVector punto2, Ecl.Image ct, List<Hu2Densidad.PuntoCurva> CurvaHU)
+        {
+            int longitud = Convert.ToInt32(Math.Abs(punto1.y - punto2.y))+1; //cantidad de puntos son mm+1 o sea que tengo tantos segmentos como mm
+            if (longitud==2)
+            {
+                return 1;
+            }
+            double[] lineaCT = new double[longitud];
+
+            ct.GetImageProfile(punto1, punto2, lineaCT);
+            return Hu2Densidad.CalcularWEDLinea(lineaCT, CurvaHU);
+        }
+
 
         public static string ExtraerFeatures(Ecl.Course curso)
         {
-            if (curso.PlanSetups.Any(p=>p.Id =="TBI Ant") && curso.PlanSetups.Any(p => p.Id == "TBI Post"))
+            if (curso.PlanSetups.Any(p => p.Id == "TBI Ant") && curso.PlanSetups.Any(p => p.Id == "TBI Post"))
             {
                 Ecl.PlanSetup planAnt = curso.PlanSetups.First(p => p.Id.Contains("TBI Ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
                 Ecl.PlanSetup planPost = curso.PlanSetups.First(p => p.Id.Contains("TBI Post") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
-                if (planAnt.StructureSet.Structures.Any(s => s.Id == "Lungs"))
+                if (planAnt.Course.Patient.LastName.Contains("SANTILLAN"))
+                {
+
+                }
+                var c = planAnt.Course;
+                var pat = c.Patient.Id;
+                var ss = planAnt.StructureSet;
+                if (ss == null || ss.Structures == null)
+                {
+
+                }
+                var sss = ss.Structures;
+                if (planAnt.StructureSet.Structures.Count() == 0 || !planAnt.StructureSet.Structures.Any(s => s.Id == "Lungs") || planAnt.StructureSet.Structures.First(s => s.Id == "Lungs").Volume == 0)
                 {
                     return "";
                 }
+
                 var diametros = Diametros50Central(planAnt, "BODY");
                 List<Arco> Arcos = Arco.extraerArcos(planAnt, planPost);
                 string output = "";
-                foreach (double diametro in diametros)
+                /*foreach (double diametro in diametros)
                 {
                     output += Math.Round(diametro, 3).ToString() + ";";
-                }
+                }*/
                 foreach (Arco ar in Arcos)
                 {
-                    output+= ar.Nombre + ";"  + ar.GantryInicio.ToString() + ";" + ar.GantryFin.ToString() + ";" + Math.Round(ar.UMporGy, 2).ToString() +";";
+                    output += ar.Nombre + ";" + ar.GantryInicio.ToString() + ";" + ar.GantryFin.ToString() + ";" + Math.Round(ar.UMporGy, 2).ToString() + ";";
                 }
                 return output;
             }
@@ -342,15 +404,15 @@ namespace TBIDyn
 
         public class Arco
         {
-           public string Nombre;
-           public double GantryInicio;
-           public double GantryFin;
-           public double UMporGy;
+            public string Nombre;
+            public double GantryInicio;
+            public double GantryFin;
+            public double UMporGy;
 
             public Arco(Ecl.PlanSetup plan, string nombre)
             {
                 List<Ecl.Beam> arcos = plan.Beams.Where(b => b.Id.ToLower().Contains(nombre.ToLower())).ToList();
-                if (arcos==null || arcos.Count==0)
+                if (arcos == null || arcos.Count == 0)
                 {
                     return;
                 }
@@ -364,7 +426,7 @@ namespace TBIDyn
                         UMporGy += arco.Meterset.Value;
                     }
                 }
-                UMporGy = UMporGy / (plan.UniqueFractionation.PrescribedDosePerFraction.Dose/100);
+                UMporGy = UMporGy / (plan.UniqueFractionation.PrescribedDosePerFraction.Dose / 100);
             }
             public override string ToString()
             {
@@ -382,7 +444,7 @@ namespace TBIDyn
                 }
                 foreach (string nombrePost in nombresPost)
                 {
-                    arcos.Add(new Arco(planPost,nombrePost));
+                    arcos.Add(new Arco(planPost, nombrePost));
                 }
                 return arcos;
             }
