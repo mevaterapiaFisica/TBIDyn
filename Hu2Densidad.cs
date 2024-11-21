@@ -14,7 +14,7 @@ namespace TBIDyn
         public static List<PuntoCurva> CurvaHU()
         {
             List<PuntoCurva> Curva = new List<PuntoCurva>();
-            
+
             Curva.Add(new PuntoCurva(-1050, 0));
             Curva.Add(new PuntoCurva(-1000, 0));
             Curva.Add(new PuntoCurva(-792.51, 0.207));
@@ -23,7 +23,7 @@ namespace TBIDyn
             Curva.Add(new PuntoCurva(42.19, 1.042));
             Curva.Add(new PuntoCurva(768.96, 1.506));
             Curva.Add(new PuntoCurva(3000, 2.93));
-            
+
             return Curva;
         }
 
@@ -42,7 +42,12 @@ namespace TBIDyn
 
         public static double ConvertirAHU(double HU, List<PuntoCurva> Curva)
         {
-            if (Curva.Any(p => p.HU == HU))
+            if (HU > 3000)
+            {
+                return 2.93;
+            }
+
+            else if (Curva.Any(p => p.HU == HU))
             {
                 return Curva.First(p => p.HU == HU).DensidadRel;
             }
@@ -58,10 +63,10 @@ namespace TBIDyn
             return ConvertirAHU((valor1 + valor2) / 2, Curva);
         }
 
-        public static double CalcularWEDLinea(double[] linea,List<PuntoCurva> Curva) //los puntos están espaciados 1mm aprox así que promedio valor CT entre dos puntos, convierto a densidad relativa y lo tengo en mm
+        public static double CalcularWEDLinea(double[] linea, List<PuntoCurva> Curva) //los puntos están espaciados 1mm aprox así que promedio valor CT entre dos puntos, convierto a densidad relativa y lo tengo en mm
         {
             double WED = 0;
-            for (int i=0;i<linea.Length-1;i++)
+            for (int i = 0; i < linea.Length - 1; i++)
             {
                 WED += CalcularWEDsegumento(linea[i], linea[i + 1], Curva);
             }
