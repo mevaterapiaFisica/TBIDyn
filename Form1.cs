@@ -30,26 +30,28 @@ namespace TBIDyn
             Ecl.Application app = Ecl.Application.CreateApplication("paberbuj", "123qwe");
             Stopwatch sw = new Stopwatch();
             sw.Start();
-            List<string> salidas = new List<string>();
-            salidas.Add("media_1;desvest_1;perc20_1;perc80_1;media_2;desvest_2;perc20_2;perc80_2;media_3;desvest_3;perc20_3;perc80_3;media_4;desvest_4;perc20_4;perc80_4;Inicio_1;Fin_1;UM/grado_1;Inicio_2;Fin_2;UM/grado_2;Inicio_3;Fin_3;UM/grado_3;Inicio_4;Fin_4;UM/grado_4");
-            var fid = File.ReadAllLines(@"\\ariamevadb-svr\va_data$\PlanHelper\Busquedas\Busqueda_21-11-2024_17_36_31");
+            //List<string> salidas = new List<string>();
+            List<Feature> lista_features = new List<Feature>();
+            //salidas.Add("media_1;desvest_1;perc20_1;perc80_1;media_2;desvest_2;perc20_2;perc80_2;media_3;desvest_3;perc20_3;perc80_3;media_4;desvest_4;perc20_4;perc80_4;Inicio_1;Fin_1;UM/grado_1;Inicio_2;Fin_2;UM/grado_2;Inicio_3;Fin_3;UM/grado_3;Inicio_4;Fin_4;UM/grado_4");
+            var fid = File.ReadAllLines(@"\\ariamevadb-svr\va_data$\PlanHelper\Busquedas\Busqueda_21-11-2024_17_36_31.txt");
             foreach (var linea in fid.Skip(1))
             {
                 var lineaSplit = linea.Split(';');
                 var paciente = app.OpenPatientById(lineaSplit[0]);
                 var curso = paciente.Courses.First(c => c.Id == lineaSplit[3]);
                 var plan = curso.PlanSetups.First(p => p.Id.Contains("TBI Ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
-                ZRodilla(plan);
-                salidas.Add(ExtraerFeatures(curso));
+                //ZRodilla(plan);
+                lista_features.Add(ExtraerFeatures(curso));
                 app.ClosePatient();
             }
-            File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\salida.txt", salidas);
-
+            Feature.EscribirCSVs(lista_features);
+            //File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\salida.txt", salidas);
+            //File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\Arco3.csv", Feature.Arco3_CSV(lista_features).ToArray());
             var elap = sw.Elapsed;
             //DcmTBIDin();
             InitializeComponent();
         }
-
+        
 
 
         public static List<string> Perfiles(Ecl.PlanSetup plan)
@@ -296,15 +298,21 @@ namespace TBIDyn
             return Hu2Densidad.CalcularWEDLinea(lineaCT, CurvaHU);
         }
 
-
-        public static string ExtraerFeatures(Ecl.Course curso)
+        public static Feature ExtraerFeatures(Ecl.Course curso)
         {
+            Feature feature = new Feature();
             if (curso.PlanSetups.Any(p => p.Id == "TBI Ant") && curso.PlanSetups.Any(p => p.Id == "TBI Post"))
             {
+                feature.ID = curso.Patient.Id;
                 Ecl.PlanSetup planAnt = curso.PlanSetups.First(p => p.Id.Contains("TBI Ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
                 VVector userOrigin = planAnt.StructureSet.Image.UserOrigin;
                 Ecl.PlanSetup planPost = curso.PlanSetups.First(p => p.Id.Contains("TBI Post") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
 
+                feature.Vol_body = planAnt.StructureSet.Structures.First(s => s.Id == "BODY").Volume;
+                if (planAnt.StructureSet.Structures.Any(s => s.Id == "Lungs"))
+                {
+                    feature.Vol_lungs = planAnt.StructureSet.Structures.First(s => s.Id == "Lungs").Volume;
+                }
                 var c = planAnt.Course;
                 var pat = c.Patient.Id;
                 var ss = planAnt.StructureSet;
@@ -312,51 +320,57 @@ namespace TBIDyn
                 var sss = ss.Structures;
                 if (planAnt.StructureSet.Structures.Count() == 0 || !planAnt.StructureSet.Structures.Any(s => s.Id == "Lungs") || planAnt.StructureSet.Structures.First(s => s.Id == "Lungs").Volume == 0)
                 {
-                    return "";
+                    return null;
                 }
 
                 var diametros = Diametros50Central(planAnt, "BODY").Where(d => !double.IsNaN(d.Item1));
                 var pulmones = InicioFinLungs(planAnt);
-                var zCabeza = diametros.Last().Item2;
-                var zPies = diametros.First().Item2;
-                var zPulmonesInf = pulmones.Item1 - userOrigin.z;
-                var zPulmonesSup = pulmones.Item2 - userOrigin.z;
-                var zRodilla = -ZRodilla(planAnt);
-                var diametrosZona1 = diametros.Where(d => d.Item2 < zRodilla).Select(d => d.Item1).ToList();
-                var diametrosZona2 = diametros.Where(d => d.Item2 > zRodilla && d.Item2 < zPulmonesInf).Select(d => d.Item1).ToList();
-                var diametrosZona3 = diametros.Where(d => d.Item2 > zPulmonesInf && d.Item2 < zPulmonesSup).Select(d => d.Item1).ToList();
-                var diametrosZona4 = diametros.Where(d => d.Item2 > zPulmonesSup).Select(d => d.Item1).ToList();
-                List<Arco> Arcos = Arco.extraerArcos(planAnt, planPost);
-                string output = "";
-                output += MetricasDeLista(diametrosZona1);
-                output += MetricasDeLista(diametrosZona2);
-                output += MetricasDeLista(diametrosZona3);
-                output += MetricasDeLista(diametrosZona4);
+                feature.z_cabeza = diametros.Last().Item2;
+                feature.z_pies = diametros.First().Item2;
+                feature.z_lung_inf = pulmones.Item1 - userOrigin.z;
+                feature.z_lung_sup = pulmones.Item2 - userOrigin.z;
+                feature.z_rodilla = -ZRodilla(planAnt);
+                var diametrosZona1 = diametros.Where(d => d.Item2 < feature.z_rodilla).Select(d => d.Item1).ToList();
+                var diametrosZona2 = diametros.Where(d => d.Item2 > feature.z_rodilla && d.Item2 < feature.z_lung_inf).Select(d => d.Item1).ToList();
+                var diametrosZona3 = diametros.Where(d => d.Item2 > feature.z_lung_inf && d.Item2 < feature.z_lung_sup).Select(d => d.Item1).ToList();
+                var diametrosZona4 = diametros.Where(d => d.Item2 > feature.z_lung_sup).Select(d => d.Item1).ToList();
+                feature.arcos = Arco.extraerArcos(planAnt, planPost);
+                //string output = "";
+                feature.regiones.Add(MetricasDeLista(diametrosZona1));
+                feature.regiones.Add(MetricasDeLista(diametrosZona2));
+                feature.regiones.Add(MetricasDeLista(diametrosZona3));
+                feature.regiones.Add(MetricasDeLista(diametrosZona4));
 
-                foreach (Arco ar in Arcos)
+                /*foreach (Arco ar in Arcos)
                 {
-                    output += ar.GantryInicio.ToString() + ";" + ar.GantryFin.ToString() + ";" + Math.Round(ar.UMporGy, 2).ToString() + ";";
+                    output += ar.gantry_inicio.ToString() + ";" + ar.gantry_fin.ToString() + ";" + Math.Round(ar.um_por_gray, 2).ToString() + ";";
                 }
-                return output;
+                return output;*/
+                return feature;
             }
             else
             {
-                return "";
+                return null;
             }
         }
-        public static string MetricasDeLista(List<double> datos)
+        public static MetricasRegion MetricasDeLista(List<double> datos)
         {
+            MetricasRegion metricas = new MetricasRegion();
             if (datos.Count == 0)
             {
-                return "0;0;0;0";
+                metricas.media = double.NaN;
+                metricas.perc20 = double.NaN;
+                metricas.perc80 = double.NaN;
+                metricas.sd = double.NaN;
+                return metricas;
             }
 
-            double media = Math.Round(datos.Average(),3);
-            double desvest = Math.Round(CalcularDesviacionEstandar(datos, media),3);
-            double perc20 = Math.Round(CalcularPercentil(datos, 20),3);
-            double perc80 = Math.Round(CalcularPercentil(datos, 80),3);
+            metricas.media = Math.Round(datos.Average(), 3);
+            metricas.sd = Math.Round(CalcularDesviacionEstandar(datos, metricas.media), 3);
+            metricas.perc20 = Math.Round(CalcularPercentil(datos, 20), 3);
+            metricas.perc80 = Math.Round(CalcularPercentil(datos, 80), 3);
 
-            return media.ToString() + ";" + desvest.ToString() + ";" + perc20.ToString() + ";" + perc80.ToString() + ";";
+            return metricas;
         }
 
 
@@ -464,53 +478,79 @@ namespace TBIDyn
             //Beam1.AddOrUpdate(DicomTag.NumberOfControlPoints, cpSequence.Count());
             file.Save(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\out.dcm");
         }
+    }
+    public class Arco
+    {
+        public string nombre;
+        public double gantry_inicio;
+        public double gantry_fin;
+        public double long_arco;
+        public double um_por_gray;
+        public double ums_por_gray_grado;
 
-        public class Arco
+        public Arco(Ecl.PlanSetup plan, string nombre)
         {
-            public string Nombre;
-            public double GantryInicio;
-            public double GantryFin;
-            public double UMporGy;
+            List<Ecl.Beam> arcos = plan.Beams.Where(b => b.Id.ToLower().Contains(nombre.ToLower())).ToList();
+            if (arcos == null || arcos.Count == 0)
+            {
+                return;
+            }
+            this.nombre = nombre;
+            gantry_inicio = arcos.First().ControlPoints.First().GantryAngle;
+            gantry_fin = arcos.First().ControlPoints.Last().GantryAngle;
+            long_arco = LongArco();
+            foreach (var arco in arcos)
+            {
+                if ((arco.ControlPoints.First().GantryAngle == gantry_inicio || arco.ControlPoints.First().GantryAngle == gantry_fin) && (arco.ControlPoints.Last().GantryAngle == gantry_inicio || arco.ControlPoints.Last().GantryAngle == gantry_fin))
+                {
+                    um_por_gray += arco.Meterset.Value;
+                }
+            }
+            um_por_gray = um_por_gray / (plan.UniqueFractionation.PrescribedDosePerFraction.Dose / 100);
+            ums_por_gray_grado = um_por_gray / long_arco;
+        }
+        public override string ToString()
+        {
+            return nombre + "-" + gantry_inicio.ToString() + "-" + gantry_fin.ToString() + "-" + um_por_gray.ToString();
+        }
 
-            public Arco(Ecl.PlanSetup plan, string nombre)
+        public double LongArco()
+        {
+            /*double inicio = gantry_inicio;
+            double fin = gantry_fin;
+            if (gantry_inicio > 180 )
             {
-                List<Ecl.Beam> arcos = plan.Beams.Where(b => b.Id.ToLower().Contains(nombre.ToLower())).ToList();
-                if (arcos == null || arcos.Count == 0)
-                {
-                    return;
-                }
-                Nombre = nombre;
-                GantryInicio = arcos.First().ControlPoints.First().GantryAngle;
-                GantryFin = arcos.First().ControlPoints.Last().GantryAngle;
-                foreach (var arco in arcos)
-                {
-                    if ((arco.ControlPoints.First().GantryAngle == GantryInicio || arco.ControlPoints.First().GantryAngle == GantryFin) && (arco.ControlPoints.Last().GantryAngle == GantryInicio || arco.ControlPoints.Last().GantryAngle == GantryFin))
-                    {
-                        UMporGy += arco.Meterset.Value;
-                    }
-                }
-                UMporGy = UMporGy / (plan.UniqueFractionation.PrescribedDosePerFraction.Dose / 100);
+                inicio = 360 - gantry_inicio;
             }
-            public override string ToString()
+            if (gantry_fin>180)
             {
-                return Nombre + "-" + GantryInicio.ToString() + "-" + GantryFin.ToString() + "-" + UMporGy.ToString();
+                fin = 360 - gantry_fin;
             }
+            return inicio + fin;*/
+            if ((gantry_inicio>180 && gantry_fin>180) || (gantry_inicio < 180 && gantry_fin < 180))
+            {
+                return Math.Abs(gantry_fin - gantry_inicio);
+            }
+            else
+            {
+                return 360 - Math.Max(gantry_fin, gantry_inicio) + Math.Min(gantry_fin, gantry_inicio);
+            }
+        }
 
-            public static List<Arco> extraerArcos(Ecl.PlanSetup planAnt, Ecl.PlanSetup planPost)
+        public static List<Arco> extraerArcos(Ecl.PlanSetup planAnt, Ecl.PlanSetup planPost)
+        {
+            List<Arco> arcos = new List<Arco>();
+            string[] nombresAnt = new string[] { "ant1", "ant2", "ant3", "ant4" };
+            string[] nombresPost = new string[] { "post1", "post2", "post3", "post4" };
+            foreach (string nombreAnt in nombresAnt)
             {
-                List<Arco> arcos = new List<Arco>();
-                string[] nombresAnt = new string[] { "ant1", "ant2", "ant3", "ant4" };
-                string[] nombresPost = new string[] { "post1", "post2", "post3", "post4" };
-                foreach (string nombreAnt in nombresAnt)
-                {
-                    arcos.Add(new Arco(planAnt, nombreAnt));
-                }
-                foreach (string nombrePost in nombresPost)
-                {
-                    arcos.Add(new Arco(planPost, nombrePost));
-                }
-                return arcos;
+                arcos.Add(new Arco(planAnt, nombreAnt));
             }
+            foreach (string nombrePost in nombresPost)
+            {
+                arcos.Add(new Arco(planPost, nombrePost));
+            }
+            return arcos;
         }
     }
 }
