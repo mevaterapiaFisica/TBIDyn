@@ -40,8 +40,12 @@ namespace TBIDyn
                 var paciente = app.OpenPatientById(lineaSplit[0]);
                 var curso = paciente.Courses.First(c => c.Id == lineaSplit[3]);
                 var plan = curso.PlanSetups.First(p => p.Id.Contains("TBI Ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
-                //ZRodilla(plan);
-                lista_features.Add(ExtraerFeatures(curso));
+                ZRodilla(plan);
+                Feature feat = ExtraerFeatures(curso);
+                if (feat != null && !feat.TieneAlgoNulo())
+                {
+                    lista_features.Add(feat);
+                }
                 app.ClosePatient();
             }
             Feature.EscribirCSVs(lista_features);
@@ -51,12 +55,12 @@ namespace TBIDyn
             //DcmTBIDin();
             InitializeComponent();
         }
-        
+
 
 
         public static List<string> Perfiles(Ecl.PlanSetup plan)
         {
-            var body = plan.StructureSet.Structures.First(s => s.Id == "BODY");
+            var body = plan.StructureSet.Structures.First(s => s.Id.ToUpper() == "BODY");
             var cortes = plan.StructureSet.Image.Series.Images.Count() - 1;
             VVector userOrgin = plan.StructureSet.Image.UserOrigin;
             //List<VVector[][]> lista = new List<VVector[][]>();
@@ -313,6 +317,7 @@ namespace TBIDyn
                 {
                     feature.Vol_lungs = planAnt.StructureSet.Structures.First(s => s.Id == "Lungs").Volume;
                 }
+                feature.Diam_en_origen = DiamZOrigin(planAnt);
                 var c = planAnt.Course;
                 var pat = c.Patient.Id;
                 var ss = planAnt.StructureSet;
@@ -496,8 +501,10 @@ namespace TBIDyn
                 return;
             }
             this.nombre = nombre;
-            gantry_inicio = arcos.First().ControlPoints.First().GantryAngle;
-            gantry_fin = arcos.First().ControlPoints.Last().GantryAngle;
+            double primerGantry = arcos.First().ControlPoints.First().GantryAngle;
+            double ultimoGantry = arcos.First().ControlPoints.Last().GantryAngle;
+            gantry_inicio = Math.Min(primerGantry, ultimoGantry);
+            gantry_fin = Math.Max(primerGantry, ultimoGantry);
             long_arco = LongArco();
             foreach (var arco in arcos)
             {
@@ -527,7 +534,7 @@ namespace TBIDyn
                 fin = 360 - gantry_fin;
             }
             return inicio + fin;*/
-            if ((gantry_inicio>180 && gantry_fin>180) || (gantry_inicio < 180 && gantry_fin < 180))
+            if ((gantry_inicio > 180 && gantry_fin > 180) || (gantry_inicio < 180 && gantry_fin < 180))
             {
                 return Math.Abs(gantry_fin - gantry_inicio);
             }

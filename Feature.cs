@@ -12,6 +12,7 @@ namespace TBIDyn
         public string ID { get; set; }
         public double Vol_body { get; set; }
         public double Vol_lungs { get; set; }
+        public double Diam_en_origen { get; set; }
         public double z_cabeza { get; set; }
         public double z_lung_sup { get; set; }
         public double z_lung_inf { get; set; }
@@ -27,75 +28,80 @@ namespace TBIDyn
             arcos = new List<Arco>();
         }
 
+        public bool TieneAlgoNulo()
+        { 
+            return Vol_body==0 || Vol_lungs==0 || Diam_en_origen ==double.NaN || z_rodilla ==double.NaN || arcos.Any(a=>a==null) || regiones.Any(r=>r.media==0 ||r.media==double.NaN);
+        }
+
         public static string EtiquetasUMArco3()
         {
-            return "ID,Vol_body,Vol_lungs,med_3,sd_3,perc80_3,perc20_3,long_arco_3,um_por_gray_3,ums_por_gray_grado_3";
+            return "ID,Vol_body,Vol_lungs,Diam_origen,med_3,sd_3,perc80_3,perc20_3,long_arco_3,um_por_gray_3,ums_por_gray_grado_3";
         }
 
         public static string EtiquetasUMArco2()
         {
-            return "ID,Vol_body,Vol_lungs,med_2,sd_2,perc80_2,perc20_2,med_3,sd_3,perc80_3,perc20_3,um_por_gray_3,long_arco_2,um_por_gray_2,ums_por_gray_grado_2";
+            return "ID,Vol_body,Vol_lungs,Diam_origen,med_2,sd_2,perc80_2,perc20_2,med_3,sd_3,perc80_3,perc20_3,um_por_gray_3,long_arco_2,um_por_gray_2,ums_por_gray_grado_2";
         }
         public static string EtiquetasUMArco4()
         {
-            return "ID,Vol_body,Vol_lungs,med_4,sd_4,perc80_4,perc20_4,med_3,sd_3,perc80_3,perc20_3,um_por_gray_3,long_arco_4,um_por_gray_4,ums_por_gray_grado_4";
+            return "ID,Vol_body,Vol_lungs,Diam_origen,med_4,sd_4,perc80_4,perc20_4,med_3,sd_3,perc80_3,perc20_3,um_por_gray_3,long_arco_4,um_por_gray_4,ums_por_gray_grado_4";
         }
         public static string EtiquetasUMArco1()
         {
-            return "ID,Vol_body,Vol_lungs,med_1,sd_1,perc80_1,perc20_1,med_2,sd_2,perc80_2,perc20_2,um_por_gray_2,long_arco_1,um_por_gray_1,ums_por_gray_grado_1";
+            return "ID,Vol_body,Vol_lungs,Diam_origen,med_1,sd_1,perc80_1,perc20_1,med_2,sd_2,perc80_2,perc20_2,um_por_gray_2,long_arco_1,um_por_gray_1,ums_por_gray_grado_1";
         }
 
         public string ToStringUMArco3()
         {
-            return ID + "," + Vol_body.ToString() + "," + Vol_lungs.ToString() + "," + regiones[2].ToString() + "," + arcos[2].long_arco.ToString() + "," + arcos[2].um_por_gray.ToString() + "," + arcos[2].ums_por_gray_grado.ToString();
+            return ID + "," + Vol_body.ToString() + "," + Vol_lungs.ToString()+ "," + Diam_en_origen.ToString() + "," + regiones[2].ToString() + "," + arcos[2].long_arco.ToString() + "," + arcos[2].um_por_gray.ToString() + "," + arcos[2].ums_por_gray_grado.ToString();
         }
         public string ToStringUMArco2()
         {
-            return ID + "," + Vol_body.ToString() + "," + Vol_lungs.ToString() + "," + regiones[1].ToString() + "," + regiones[2].ToString() + "," + arcos[2].um_por_gray + arcos[1].long_arco.ToString() + "," + arcos[1].um_por_gray.ToString() + "," + arcos[1].ums_por_gray_grado.ToString();
+            return ID + "," + Vol_body.ToString() + "," + Vol_lungs.ToString() + "," + Diam_en_origen.ToString() + "," + regiones[1].ToString() + "," + regiones[2].ToString() + "," + arcos[2].um_por_gray + "," + arcos[1].long_arco.ToString() + "," + arcos[1].um_por_gray.ToString() + "," + arcos[1].ums_por_gray_grado.ToString();
         }
         public string ToStringUMArco4()
         {
-            return ID + "," + Vol_body.ToString() + "," + Vol_lungs.ToString() + "," + regiones[3].ToString() + "," + regiones[2].ToString() + "," + arcos[2].um_por_gray + arcos[3].long_arco.ToString() + "," + arcos[3].um_por_gray.ToString() + "," + arcos[3].ums_por_gray_grado.ToString();
+            return ID + "," + Vol_body.ToString() + "," + Vol_lungs.ToString() + "," + Diam_en_origen.ToString() + "," + regiones[3].ToString() + "," + regiones[2].ToString() + "," + arcos[2].um_por_gray + "," + arcos[3].long_arco.ToString() + "," + arcos[3].um_por_gray.ToString() + "," + arcos[3].ums_por_gray_grado.ToString();
         }
         public string ToStringUMArco1()
         {
-            return ID + "," + Vol_body.ToString() + "," + Vol_lungs.ToString() + "," + regiones[0].ToString() + "," + regiones[1].ToString() + "," + arcos[1].um_por_gray + arcos[0].long_arco.ToString() + "," + arcos[0].um_por_gray.ToString() + "," + arcos[0].ums_por_gray_grado.ToString();
+            return ID + "," + Vol_body.ToString() + "," + Vol_lungs.ToString() + "," + Diam_en_origen.ToString() + "," + regiones[0].ToString() + "," + regiones[1].ToString() + "," + arcos[1].um_por_gray + "," + arcos[0].long_arco.ToString() + "," + arcos[0].um_por_gray.ToString() + "," + arcos[0].ums_por_gray_grado.ToString();
         }
         public string ToStringGantryArco1()
         {
-            return ID + "," + z_pies.ToString() + "," + z_rodilla.ToString() + "," + arcos[0].gantry_inicio.ToString() + arcos[0].gantry_fin.ToString();
+            return ID + "," + Diam_en_origen.ToString() + "," + z_pies.ToString() + "," + z_rodilla.ToString() + "," + arcos[0].gantry_inicio.ToString() + "," + arcos[0].gantry_fin.ToString();
         }
 
         public string ToStringGantryArco2()
         {
-            return ID + "," + z_rodilla.ToString() + "," + z_lung_inf.ToString() + "," + arcos[1].gantry_inicio.ToString() + arcos[1].gantry_fin.ToString();
+            return ID + "," + Diam_en_origen.ToString() + "," + z_rodilla.ToString() + "," + z_lung_inf.ToString() + "," + arcos[1].gantry_inicio.ToString() + "," + arcos[1].gantry_fin.ToString();
         }
 
         public string ToStringGantryArco3()
         {
-            return ID + "," + z_lung_inf.ToString() + "," + z_lung_sup.ToString() + "," + arcos[2].gantry_inicio.ToString() + arcos[2].gantry_fin.ToString();
+            return ID + "," + Diam_en_origen.ToString() + "," + z_lung_inf.ToString() + "," + z_lung_sup.ToString() + "," + arcos[2].gantry_inicio.ToString() + "," + arcos[2].gantry_fin.ToString();
         }
 
         public string ToStringGantryArco4()
         {
-            return ID + "," + z_lung_sup.ToString() + "," + z_cabeza.ToString() + "," + arcos[3].gantry_inicio.ToString() + arcos[3].gantry_fin.ToString();
+            return ID + "," + Diam_en_origen.ToString() + "," + z_lung_sup.ToString() + "," + z_cabeza.ToString() + "," + arcos[3].gantry_inicio.ToString() + "," + arcos[3].gantry_fin.ToString();
         }
 
         public static string EtiquetaGantryArco1()
         {
-            return "ID,z_pies,z_rodilla,gantry_inicio_1,gantry_fin_1";
+            return "ID,Diam_origen,z_pies,z_rodilla,gantry_inicio_1,gantry_fin_1";
         }
         public static string EtiquetaGantryArco2()
         {
-            return "ID,z_rodilla,z_lung_inf,gantry_inicio_2,gantry_fin_2";
+            return "ID,Diam_origen,z_rodilla,z_lung_inf,gantry_inicio_2,gantry_fin_2";
         }
         public static string EtiquetaGantryArco3()
         {
-            return "ID,z_lung_inf,z_lung_sup,gantry_inicio_3,gantry_fin_3";
+            return "ID,Diam_origen,z_lung_inf,z_lung_sup,gantry_inicio_3,gantry_fin_3";
         }
         public static string EtiquetaGantryArco4()
         {
-            return "ID,z_lung_sup,z_cabeza,gantry_inicio_4,gantry_fin_4";
+            return "ID,Diam_origen,z_lung_sup,z_cabeza,gantry_inicio_4,gantry_fin_4";
         }
 
 
