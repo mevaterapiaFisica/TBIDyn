@@ -33,20 +33,26 @@ namespace TBIDyn
             //List<string> salidas = new List<string>();
             List<Feature> lista_features = new List<Feature>();
             //salidas.Add("media_1;desvest_1;perc20_1;perc80_1;media_2;desvest_2;perc20_2;perc80_2;media_3;desvest_3;perc20_3;perc80_3;media_4;desvest_4;perc20_4;perc80_4;Inicio_1;Fin_1;UM/grado_1;Inicio_2;Fin_2;UM/grado_2;Inicio_3;Fin_3;UM/grado_3;Inicio_4;Fin_4;UM/grado_4");
-            var fid = File.ReadAllLines(@"\\ariamevadb-svr\va_data$\PlanHelper\Busquedas\Busqueda_21-11-2024_17_36_31.txt");
+            var fid = File.ReadAllLines(@"\\ariamevadb-svr\va_data$\PlanHelper\Busquedas\Busqueda_25-11-2024_15_05_06.txt");
             foreach (var linea in fid.Skip(1))
             {
                 var lineaSplit = linea.Split(';');
-                var paciente = app.OpenPatientById(lineaSplit[0]);
-                var curso = paciente.Courses.First(c => c.Id == lineaSplit[3]);
-                var plan = curso.PlanSetups.First(p => p.Id.Contains("TBI Ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
-                ZRodilla(plan);
-                Feature feat = ExtraerFeatures(curso);
-                if (feat != null && !feat.TieneAlgoNulo())
-                {
-                    lista_features.Add(feat);
-                }
-                app.ClosePatient();
+                /*if (lineaSplit[0] != "1-109423-0")
+                { }
+                else
+                {*/
+                    var paciente = app.OpenPatientById(lineaSplit[0]);
+
+                    var curso = paciente.Courses.First(c => c.Id == lineaSplit[3]);
+                    var plan = curso.PlanSetups.First(p => p.Id.Contains("TBI Ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
+                    ZRodilla(plan);
+                    Feature feat = ExtraerFeatures(curso);
+                    if (feat != null && !feat.TieneAlgoNulo())
+                    {
+                        lista_features.Add(feat);
+                    }
+                    app.ClosePatient();
+                //}
             }
             Feature.EscribirCSVs(lista_features);
             //File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\salida.txt", salidas);
@@ -175,7 +181,11 @@ namespace TBIDyn
                 if (corte.Length > 0)
                 {
                     VVector[] curva = corte.OrderBy(c => c.Length).Last();
-                    if (Math.Round(curva.First().z, 2) == Math.Round(userOrgin.z, 2))
+                    /*if (Math.Round(curva.First().z, 2)>471)
+                    {
+
+                    }*/
+                    if (Math.Round(curva.First().z, 1) == Math.Round(userOrgin.z, 1))
                     {
 
                         return Math.Abs(curva.OrderBy(c => c.y).First().y - curva.OrderBy(c => c.y).Last().y); //No es exacto pero es lo más simple
@@ -375,6 +385,10 @@ namespace TBIDyn
             metricas.perc20 = Math.Round(CalcularPercentil(datos, 20), 3);
             metricas.perc80 = Math.Round(CalcularPercentil(datos, 80), 3);
 
+            if (metricas.media==double.NaN)
+            {
+
+            }
             return metricas;
         }
 
