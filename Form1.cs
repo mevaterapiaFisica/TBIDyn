@@ -515,10 +515,20 @@ namespace TBIDyn
                 return;
             }
             this.nombre = nombre;
-            double primerGantry = arcos.First().ControlPoints.First().GantryAngle;
+            if (arcos.First().GantryDirection==GantryDirection.Clockwise)
+            {
+                gantry_inicio = arcos.First().ControlPoints.First().GantryAngle;
+                gantry_fin = arcos.First().ControlPoints.Last().GantryAngle;
+            }
+            else
+            {
+                gantry_inicio = arcos.First().ControlPoints.Last().GantryAngle;
+                gantry_fin = arcos.First().ControlPoints.First().GantryAngle;
+            }
+            /*double primerGantry = arcos.First().ControlPoints.First().GantryAngle;
             double ultimoGantry = arcos.First().ControlPoints.Last().GantryAngle;
             gantry_inicio = Math.Min(primerGantry, ultimoGantry);
-            gantry_fin = Math.Max(primerGantry, ultimoGantry);
+            gantry_fin = Math.Max(primerGantry, ultimoGantry);*/
             long_arco = LongArco();
             foreach (var arco in arcos)
             {
