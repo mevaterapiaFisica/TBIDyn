@@ -31,7 +31,7 @@ namespace TBIDyn
             Stopwatch sw = new Stopwatch();
             sw.Start();
             //List<string> salidas = new List<string>();
-            List<Feature> lista_features = new List<Feature>();
+            List<Minado> lista_features = new List<Minado>();
             //salidas.Add("media_1;desvest_1;perc20_1;perc80_1;media_2;desvest_2;perc20_2;perc80_2;media_3;desvest_3;perc20_3;perc80_3;media_4;desvest_4;perc20_4;perc80_4;Inicio_1;Fin_1;UM/grado_1;Inicio_2;Fin_2;UM/grado_2;Inicio_3;Fin_3;UM/grado_3;Inicio_4;Fin_4;UM/grado_4");
             var fid = File.ReadAllLines(@"\\ariamevadb-svr\va_data$\PlanHelper\Busquedas\Busqueda_25-11-2024_15_05_06.txt");
             foreach (var linea in fid.Skip(1))
@@ -46,7 +46,7 @@ namespace TBIDyn
                     var curso = paciente.Courses.First(c => c.Id == lineaSplit[3]);
                     var plan = curso.PlanSetups.First(p => p.Id.Contains("TBI Ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
                     ZRodilla(plan);
-                    Feature feat = ExtraerFeatures(curso);
+                    Minado feat = ExtraerFeatures(curso);
                     if (feat != null && !feat.TieneAlgoNulo())
                     {
                         lista_features.Add(feat);
@@ -54,7 +54,7 @@ namespace TBIDyn
                     app.ClosePatient();
                 //}
             }
-            Feature.EscribirCSVs(lista_features);
+            Minado.EscribirCSVs(lista_features);
             //File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\salida.txt", salidas);
             //File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\Arco3.csv", Feature.Arco3_CSV(lista_features).ToArray());
             var elap = sw.Elapsed;
@@ -312,9 +312,9 @@ namespace TBIDyn
             return Hu2Densidad.CalcularWEDLinea(lineaCT, CurvaHU);
         }
 
-        public static Feature ExtraerFeatures(Ecl.Course curso)
+        public static Minado ExtraerFeatures(Ecl.Course curso)
         {
-            Feature feature = new Feature();
+            Minado feature = new Minado();
             if (curso.PlanSetups.Any(p => p.Id == "TBI Ant") && curso.PlanSetups.Any(p => p.Id == "TBI Post"))
             {
                 feature.ID = curso.Patient.Id;

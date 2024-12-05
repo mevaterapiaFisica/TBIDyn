@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace TBIDyn
 {
-    public class Feature
+    public class Minado
     {
         public string ID { get; set; }
         public double Vol_body { get; set; }
@@ -22,7 +22,7 @@ namespace TBIDyn
         public List<MetricasRegion> regiones { get; set; }
         public List<Arco> arcos { get; set; }
 
-        public Feature()
+        public Minado()
         {
             regiones = new List<MetricasRegion>();
             arcos = new List<Arco>();
@@ -105,7 +105,7 @@ namespace TBIDyn
         }
 
 
-        public static void EscribirCSVs(List<Feature> lista_features)
+        public static void EscribirCSVs(List<Minado> lista_features)
         {
             List<string> UM_arco1 = new List<string>();
             UM_arco1.Add(EtiquetasUMArco1());
@@ -123,7 +123,7 @@ namespace TBIDyn
             UM_arco4.Add(EtiquetasUMArco4());
             List<string> Gantry_arco4 = new List<string>();
             Gantry_arco4.Add(EtiquetaGantryArco4());
-            foreach (Feature f in lista_features)
+            foreach (Minado f in lista_features)
             {
                 UM_arco1.Add(f.ToStringUMArco1());
                 Gantry_arco1.Add(f.ToStringGantryArco1());
