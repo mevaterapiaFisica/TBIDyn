@@ -14,6 +14,7 @@ using FellowOakDicom;
 using Ecl = VMS.TPS.Common.Model.API;
 using VMS.TPS.Common.Model.Types;
 using VMS.TPS.Common.VolumeModel;
+using Newtonsoft.Json;
 //using
 
 namespace TBIDyn
@@ -27,6 +28,10 @@ namespace TBIDyn
 
         public Form1()
         {
+            string jsonPath = @"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\trained_models_ums.json";
+            var models = JsonConvert.DeserializeObject<Dictionary<string, Modelo>>(File.ReadAllText(jsonPath));
+
+
             Ecl.Application app = Ecl.Application.CreateApplication("paberbuj", "123qwe");
             Stopwatch sw = new Stopwatch();
             sw.Start();
