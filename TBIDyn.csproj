@@ -154,6 +154,7 @@
     </Compile>
     <Compile Include="Hu2Densidad.cs" />
     <Compile Include="Modelo.cs" />
+    <Compile Include="Paciente.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
