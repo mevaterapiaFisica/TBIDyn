@@ -31,6 +31,32 @@ namespace TBIDyn
 
             return prediction;
         }
+        public Dictionary<string, double> ObtenerFeatures(Paciente paciente)
+        {
+            var features = new Dictionary<string, double>();
+
+            // Obtener todas las propiedades públicas de la clase
+            var propiedades = typeof(Paciente).GetProperties();
+
+            foreach (var nombreFeature in this.Features)
+            {
+                // Buscar la propiedad correspondiente
+                var propiedad = propiedades.FirstOrDefault(p => p.Name == nombreFeature);
+
+                if (propiedad != null && propiedad.PropertyType == typeof(double))
+                {
+                    // Obtener el valor de la propiedad
+                    var valor = (double)propiedad.GetValue(paciente);
+                    features[nombreFeature] = valor;
+                }
+                else
+                {
+                    throw new ArgumentException($"La propiedad '{nombreFeature}' no existe o no es de tipo double.");
+                }
+            }
+
+            return features;
+        }
     }
 }
 

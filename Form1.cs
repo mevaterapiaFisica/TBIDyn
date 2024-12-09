@@ -28,8 +28,10 @@ namespace TBIDyn
 
         public Form1()
         {
-            string jsonPath = @"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\trained_models_ums.json";
+            /*string jsonPath = @"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\trained_models_ums.json";
+            string jsonPath2 = @"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\trained_models_gantrys.json";
             var models = JsonConvert.DeserializeObject<Dictionary<string, Modelo>>(File.ReadAllText(jsonPath));
+            var models2 = JsonConvert.DeserializeObject<Dictionary<string, Modelo>>(File.ReadAllText(jsonPath2));*/
 
 
             Ecl.Application app = Ecl.Application.CreateApplication("paberbuj", "123qwe");
@@ -46,17 +48,22 @@ namespace TBIDyn
                 { }
                 else
                 {*/
-                    var paciente = app.OpenPatientById(lineaSplit[0]);
+                var paciente = app.OpenPatientById(lineaSplit[0]);
 
-                    var curso = paciente.Courses.First(c => c.Id == lineaSplit[3]);
-                    var plan = curso.PlanSetups.First(p => p.Id.Contains("TBI Ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
-                    ZRodilla(plan);
-                    Minado feat = ExtraerFeatures(curso);
-                    if (feat != null && !feat.TieneAlgoNulo())
-                    {
-                        lista_features.Add(feat);
-                    }
-                    app.ClosePatient();
+                var curso = paciente.Courses.First(c => c.Id == lineaSplit[3]);
+                var plan = curso.PlanSetups.First(p => p.Id.Contains("TBI Ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
+                Paciente pac = new Paciente();
+                pac.LlenarPaciente(paciente, curso);
+                pac.LlenarAnatomia(paciente, curso);
+                pac.LlenarPredicciones();
+
+                ZRodilla(plan);
+                Minado feat = ExtraerFeatures(curso);
+                if (feat != null && !feat.TieneAlgoNulo())
+                {
+                    lista_features.Add(feat);
+                }
+                app.ClosePatient();
                 //}
             }
             Minado.EscribirCSVs(lista_features);
@@ -390,7 +397,7 @@ namespace TBIDyn
             metricas.perc20 = Math.Round(CalcularPercentil(datos, 20), 3);
             metricas.perc80 = Math.Round(CalcularPercentil(datos, 80), 3);
 
-            if (metricas.media==double.NaN)
+            if (metricas.media == double.NaN)
             {
 
             }
@@ -520,7 +527,7 @@ namespace TBIDyn
                 return;
             }
             this.nombre = nombre;
-            if (arcos.First().GantryDirection==GantryDirection.Clockwise)
+            if (arcos.First().GantryDirection == GantryDirection.Clockwise)
             {
                 gantry_inicio = arcos.First().ControlPoints.First().GantryAngle;
                 gantry_fin = arcos.First().ControlPoints.Last().GantryAngle;
