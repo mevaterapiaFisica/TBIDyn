@@ -83,15 +83,15 @@ namespace TBIDyn
             var models_um = JsonConvert.DeserializeObject<Dictionary<string, Modelo>>(File.ReadAllText(jsonPathUMs));
             var models_gantry = JsonConvert.DeserializeObject<Dictionary<string, Modelo>>(File.ReadAllText(jsonPathGantrys));
             var modelo_gantry_pies = models_gantry.First(m => m.Key == "gantry_inicio_1").Value;
-            gantry_pies = modelo_gantry_pies.Predecir(modelo_gantry_pies.ObtenerFeatures(this));
+            gantry_pies = Math.Round(modelo_gantry_pies.Predecir(modelo_gantry_pies.ObtenerFeatures(this)),0);
             var modelo_gantry_rodilla = models_gantry.First(m => m.Key == "gantry_fin_1").Value;
-            gantry_rodilla = modelo_gantry_rodilla.Predecir(modelo_gantry_rodilla.ObtenerFeatures(this));
+            gantry_rodilla = Math.Round(modelo_gantry_rodilla.Predecir(modelo_gantry_rodilla.ObtenerFeatures(this)),0);
             var modelo_gantry_lung_inf = models_gantry.First(m => m.Key == "gantry_fin_2").Value;
-            gantry_lung_inf = modelo_gantry_lung_inf.Predecir(modelo_gantry_lung_inf.ObtenerFeatures(this));
+            gantry_lung_inf = Math.Round(modelo_gantry_lung_inf.Predecir(modelo_gantry_lung_inf.ObtenerFeatures(this)),0);
             var modelo_gantry_lung_sup = models_gantry.First(m => m.Key == "gantry_fin_3").Value;
-            gantry_lung_sup = modelo_gantry_lung_sup.Predecir(modelo_gantry_lung_sup.ObtenerFeatures(this));
+            gantry_lung_sup = Math.Round(modelo_gantry_lung_sup.Predecir(modelo_gantry_lung_sup.ObtenerFeatures(this)),0);
             var modelo_gantry_cabeza = models_gantry.First(m => m.Key == "gantry_fin_4").Value;
-            gantry_cabeza = modelo_gantry_cabeza.Predecir(modelo_gantry_cabeza.ObtenerFeatures(this));
+            gantry_cabeza = Math.Round(modelo_gantry_cabeza.Predecir(modelo_gantry_cabeza.ObtenerFeatures(this)),0);
 
 
         }

@@ -37,8 +37,9 @@ namespace TBIDyn
             Ecl.Application app = Ecl.Application.CreateApplication("paberbuj", "123qwe");
             Stopwatch sw = new Stopwatch();
             sw.Start();
-            //List<string> salidas = new List<string>();
+            List<string> salidas = new List<string>();
             List<Minado> lista_features = new List<Minado>();
+            salidas.Add("gantry_pies_plan;gantry_pies_pred;gantry_rodilla_plan;gantry_rodilla_pred;gantry_lung_inf_plan;gantry_lung_inf_pred;gantry_lung_sup_plan;gantry_lung_sup_pred;gantry_cabeza_plan;gantry_cabeza_pred");
             //salidas.Add("media_1;desvest_1;perc20_1;perc80_1;media_2;desvest_2;perc20_2;perc80_2;media_3;desvest_3;perc20_3;perc80_3;media_4;desvest_4;perc20_4;perc80_4;Inicio_1;Fin_1;UM/grado_1;Inicio_2;Fin_2;UM/grado_2;Inicio_3;Fin_3;UM/grado_3;Inicio_4;Fin_4;UM/grado_4");
             var fid = File.ReadAllLines(@"\\ariamevadb-svr\va_data$\PlanHelper\Busquedas\Busqueda_25-11-2024_15_05_06.txt");
             foreach (var linea in fid.Skip(1))
@@ -53,9 +54,7 @@ namespace TBIDyn
                 var curso = paciente.Courses.First(c => c.Id == lineaSplit[3]);
                 var plan = curso.PlanSetups.First(p => p.Id.Contains("TBI Ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
                 Paciente pac = new Paciente();
-                pac.LlenarPaciente(paciente, curso);
-                pac.LlenarAnatomia(paciente, curso);
-                pac.LlenarPredicciones();
+                
 
                 ZRodilla(plan);
                 Minado feat = ExtraerFeatures(curso);
@@ -63,11 +62,18 @@ namespace TBIDyn
                 {
                     lista_features.Add(feat);
                 }
+                pac.LlenarPaciente(paciente, curso);
+                pac.LlenarAnatomia(paciente, curso);
+                pac.LlenarPredicciones();
+                if (feat!=null && pac!=null)
+                {
+                    salidas.Add(feat.arcos[0].gantry_inicio.ToString() + ";" + pac.gantry_pies.ToString() + ";" + feat.arcos[1].gantry_inicio.ToString() + ";" + pac.gantry_rodilla.ToString() + ";" + feat.arcos[2].gantry_inicio.ToString() + ";" + pac.gantry_lung_inf.ToString() + ";" + feat.arcos[3].gantry_inicio.ToString() + ";" + pac.gantry_lung_sup.ToString() + ";" + feat.arcos[3].gantry_fin.ToString() + ";" + pac.gantry_cabeza.ToString());
+                }
                 app.ClosePatient();
                 //}
             }
             Minado.EscribirCSVs(lista_features);
-            //File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\salida.txt", salidas);
+            File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\salida.txt", salidas);
             //File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\Arco3.csv", Feature.Arco3_CSV(lista_features).ToArray());
             var elap = sw.Elapsed;
             //DcmTBIDin();
@@ -132,14 +138,14 @@ namespace TBIDyn
 
         public static Tuple<double, double> InicioFinLungs(Ecl.PlanSetup plan)
         {
-            if (!plan.StructureSet.Structures.Any(s => s.Id == "Lungs"))
+            if (!plan.StructureSet.Structures.Any(s => s.Id.ToLower().Contains("lung") || s.Id.ToLower().Contains("pulmon")))
             {
                 var curso = plan.Course;
                 var paciente = curso.Patient;
                 var ss = plan.StructureSet.Structures;
                 return null;
             }
-            var lungs = plan.StructureSet.Structures.First(s => s.Id == "Lungs");
+            var lungs = plan.StructureSet.Structures.First(s => s.Id.ToLower().Contains("lung") || s.Id.ToLower().Contains("pulmon"));
             var cortes = plan.StructureSet.Image.Series.Images.Count() - 1;
             double inicio = double.NaN;
             double fin = double.NaN;
