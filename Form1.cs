@@ -54,11 +54,9 @@ namespace TBIDyn
                 var curso = paciente.Courses.First(c => c.Id == lineaSplit[3]);
                 var plan = curso.PlanSetups.First(p => p.Id.Contains("TBI Ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
                 Paciente pac = new Paciente();
-                
-
                 ZRodilla(plan);
                 Minado feat = ExtraerFeatures(curso);
-                if (feat != null && !feat.TieneAlgoNulo())
+                /*if (feat != null && !feat.TieneAlgoNulo())
                 {
                     lista_features.Add(feat);
                 }
@@ -68,7 +66,7 @@ namespace TBIDyn
                 if (feat!=null && pac!=null)
                 {
                     salidas.Add(feat.arcos[0].gantry_inicio.ToString() + ";" + pac.gantry_pies.ToString() + ";" + feat.arcos[1].gantry_inicio.ToString() + ";" + pac.gantry_rodilla.ToString() + ";" + feat.arcos[2].gantry_inicio.ToString() + ";" + pac.gantry_lung_inf.ToString() + ";" + feat.arcos[3].gantry_inicio.ToString() + ";" + pac.gantry_lung_sup.ToString() + ";" + feat.arcos[3].gantry_fin.ToString() + ";" + pac.gantry_cabeza.ToString());
-                }
+                }*/
                 app.ClosePatient();
                 //}
             }
@@ -524,6 +522,15 @@ namespace TBIDyn
         public double long_arco;
         public double um_por_gray;
         public double ums_por_gray_grado;
+        public Arco(string _nombre,double _gantry_i, double _gantry_f, double _um_por_gray)
+        {
+            nombre = _nombre;
+            gantry_inicio = _gantry_i;
+            gantry_fin = _gantry_f;
+            long_arco = Paciente.LongitudArco(_gantry_i, _gantry_f);
+            um_por_gray = _um_por_gray;
+            ums_por_gray_grado = _um_por_gray / long_arco;
+        }
 
         public Arco(Ecl.PlanSetup plan, string nombre)
         {
@@ -599,7 +606,17 @@ namespace TBIDyn
             {
                 arcos.Add(new Arco(planPost, nombrePost));
             }
-            return arcos;
+            //unifico ant y post. Después en algún momento puedo analizar por separado. Promedio las UM y los gantrys
+            List<Arco> arcosUnificados = new List<Arco>();
+            for (int i=0;i<4;i++)
+            {
+                Arco arco_ant = arcos[i];
+                Arco arco_post = arcos[i+4];
+                Arco arco = new Arco((i+1).ToString(), (arco_ant.gantry_inicio + arco_post.gantry_inicio) / 2, (arco_ant.gantry_fin + arco_post.gantry_fin) / 2, (arco_ant.um_por_gray + arco_post.um_por_gray) / 2);
+                arcosUnificados.Add(arco);
+            }
+
+            return arcosUnificados;
         }
     }
 }
