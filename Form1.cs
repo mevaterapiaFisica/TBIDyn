@@ -56,14 +56,14 @@ namespace TBIDyn
                 Paciente pac = new Paciente();
                 ZRodilla(plan);
                 Minado feat = ExtraerFeatures(curso);
-                /*if (feat != null && !feat.TieneAlgoNulo())
+                if (feat != null && !feat.TieneAlgoNulo())
                 {
                     lista_features.Add(feat);
                 }
-                pac.LlenarPaciente(paciente, curso);
+                /*pac.LlenarPaciente(paciente, curso);
                 pac.LlenarAnatomia(paciente, curso);
-                pac.LlenarPredicciones();
-                if (feat!=null && pac!=null)
+                pac.LlenarPredicciones();*/
+                /*if (feat!=null && pac!=null)
                 {
                     salidas.Add(feat.arcos[0].gantry_inicio.ToString() + ";" + pac.gantry_pies.ToString() + ";" + feat.arcos[1].gantry_inicio.ToString() + ";" + pac.gantry_rodilla.ToString() + ";" + feat.arcos[2].gantry_inicio.ToString() + ";" + pac.gantry_lung_inf.ToString() + ";" + feat.arcos[3].gantry_inicio.ToString() + ";" + pac.gantry_lung_sup.ToString() + ";" + feat.arcos[3].gantry_fin.ToString() + ";" + pac.gantry_cabeza.ToString());
                 }*/
