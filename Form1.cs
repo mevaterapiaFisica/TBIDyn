@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using FellowOakDicom.IO;
 using FellowOakDicom;
-using Ecl = VMS.TPS.Common.Model.API;
+using VMS.TPS.Common.Model.API;
 using VMS.TPS.Common.Model.Types;
 using VMS.TPS.Common.VolumeModel;
 using Newtonsoft.Json;
@@ -34,7 +34,7 @@ namespace TBIDyn
             var models2 = JsonConvert.DeserializeObject<Dictionary<string, Modelo>>(File.ReadAllText(jsonPath2));*/
 
 
-            Ecl.Application app = Ecl.Application.CreateApplication("paberbuj", "123qwe");
+            VMS.TPS.Common.Model.API.Application app = VMS.TPS.Common.Model.API.Application.CreateApplication("paberbuj", "123qwe");
             Stopwatch sw = new Stopwatch();
             sw.Start();
             List<string> salidasGantry = new List<string>();
@@ -86,7 +86,7 @@ namespace TBIDyn
 
 
 
-        public static List<string> Perfiles(Ecl.PlanSetup plan)
+       /* public static List<string> Perfiles(PlanSetup plan)
         {
             var body = plan.StructureSet.Structures.First(s => s.Id.ToUpper() == "BODY");
             var cortes = plan.StructureSet.Image.Series.Images.Count() - 1;
@@ -133,14 +133,14 @@ namespace TBIDyn
                             export.Add(vector.x + ";" + vector.y + ";" + vector.z);
                         }
 
-                    }*/
+                    }
 
                 }
             }
             return export;
-        }
+        }*/
 
-        public static Tuple<double, double> InicioFinLungs(Ecl.PlanSetup plan)
+        public static Tuple<double, double> InicioFinLungs(PlanSetup plan)
         {
             if (!plan.StructureSet.Structures.Any(s => s.Id.ToLower().Contains("lung") || s.Id.ToLower().Contains("pulmon")))
             {
@@ -179,7 +179,7 @@ namespace TBIDyn
 
         }
 
-        public static double ZRodilla(Ecl.PlanSetup plan) //No funciona óptimo. Igual los planes no paran en rodilla
+        public static double ZRodilla(PlanSetup plan) //No funciona óptimo. Igual los planes no paran en rodilla
         {
             if (plan.Beams.Any(b => b.Id.Contains("ant1")))
             {
@@ -192,7 +192,7 @@ namespace TBIDyn
             return double.NaN;
         }
 
-        public static double DiamZOrigin(Ecl.PlanSetup plan)
+        public static double DiamZOrigin(PlanSetup plan)
         {
             var body = plan.StructureSet.Structures.First(s => s.Id == "BODY");
             var cortes = plan.StructureSet.Image.Series.Images.Count() - 1;
@@ -216,7 +216,7 @@ namespace TBIDyn
             }
             return double.NaN;
         }
-        public static List<string> Perfiles50Central(Ecl.PlanSetup plan, string estructura)
+        public static List<string> Perfiles50Central(PlanSetup plan, string estructura)
         {
             var body = plan.StructureSet.Structures.First(s => s.Id == estructura);
             //var ss = plan.StructureSet.Structures;
@@ -253,7 +253,7 @@ namespace TBIDyn
             return export;
         }
 
-        public static List<Tuple<double, double>> Diametros50Central(Ecl.PlanSetup plan, string estructura)
+        public static List<Tuple<double, double>> Diametros50Central(PlanSetup plan, string estructura)
         {
             var body = plan.StructureSet.Structures.First(s => s.Id == estructura);
             //var ss = plan.StructureSet.Structures;
@@ -291,7 +291,7 @@ namespace TBIDyn
             return diametros50;
         }
 
-        private static Tuple<double, double> diametros50Curva(VVector[] curva, VVector userOrigin, Ecl.Image ct, List<Hu2Densidad.PuntoCurva> CurvaHU)
+        private static Tuple<double, double> diametros50Curva(VVector[] curva, VVector userOrigin, VMS.TPS.Common.Model.API.Image ct, List<Hu2Densidad.PuntoCurva> CurvaHU)
         {
             double xmin = curva.OrderBy(c => c.x).First().x;
             double xmax = curva.OrderBy(c => c.x).Last().x;
@@ -321,7 +321,7 @@ namespace TBIDyn
 
         }
 
-        public static double WED(VVector punto1, VVector punto2, Ecl.Image ct, List<Hu2Densidad.PuntoCurva> CurvaHU)
+        public static double WED(VVector punto1, VVector punto2, VMS.TPS.Common.Model.API.Image ct, List<Hu2Densidad.PuntoCurva> CurvaHU)
         {
             int longitud = Convert.ToInt32(Math.Abs(punto1.y - punto2.y)) + 1; //cantidad de puntos son mm+1 o sea que tengo tantos segmentos como mm
             if (longitud == 2)
@@ -334,15 +334,15 @@ namespace TBIDyn
             return Hu2Densidad.CalcularWEDLinea(lineaCT, CurvaHU);
         }
 
-        public static Minado ExtraerFeatures(Ecl.Course curso)
+        public static Minado ExtraerFeatures(Course curso)
         {
             Minado feature = new Minado();
             if (curso.PlanSetups.Any(p => p.Id == "TBI Ant") && curso.PlanSetups.Any(p => p.Id == "TBI Post"))
             {
                 feature.ID = curso.Patient.Id;
-                Ecl.PlanSetup planAnt = curso.PlanSetups.First(p => p.Id.Contains("TBI Ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
+                PlanSetup planAnt = curso.PlanSetups.First(p => p.Id.Contains("TBI Ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
                 VVector userOrigin = planAnt.StructureSet.Image.UserOrigin;
-                Ecl.PlanSetup planPost = curso.PlanSetups.First(p => p.Id.Contains("TBI Post") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
+                PlanSetup planPost = curso.PlanSetups.First(p => p.Id.Contains("TBI Post") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
 
                 feature.Vol_body = planAnt.StructureSet.Structures.First(s => s.Id == "BODY").Volume;
                 if (planAnt.StructureSet.Structures.Any(s => s.Id == "Lungs"))
@@ -360,7 +360,7 @@ namespace TBIDyn
                     return null;
                 }
 
-                var diametros = Diametros50Central(planAnt, "BODY").Where(d => !double.IsNaN(d.Item1));
+                var diametros = Extracciones.Diametros50Central(ss).Where(d => !double.IsNaN(d.Item1));
                 var pulmones = InicioFinLungs(planAnt);
                 feature.z_cabeza = diametros.Last().Item2;
                 feature.z_pies = diametros.First().Item2;
@@ -538,9 +538,9 @@ namespace TBIDyn
             ums_por_gray_grado = _um_por_gray / long_arco;
         }
 
-        public Arco(Ecl.PlanSetup plan, string nombre)
+        public Arco(PlanSetup plan, string nombre)
         {
-            List<Ecl.Beam> arcos = plan.Beams.Where(b => b.Id.ToLower().Contains(nombre.ToLower())).ToList();
+            List<Beam> arcos = plan.Beams.Where(b => b.Id.ToLower().Contains(nombre.ToLower())).ToList();
             if (arcos == null || arcos.Count == 0)
             {
                 return;
@@ -599,7 +599,7 @@ namespace TBIDyn
             }
         }
 
-        public static List<Arco> extraerArcos(Ecl.PlanSetup planAnt, Ecl.PlanSetup planPost)
+        public static List<Arco> extraerArcos(PlanSetup planAnt, PlanSetup planPost)
         {
             List<Arco> arcos = new List<Arco>();
             string[] nombresAnt = new string[] { "ant1", "ant2", "ant3", "ant4" };

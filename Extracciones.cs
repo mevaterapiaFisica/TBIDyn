@@ -10,11 +10,9 @@ using VMS.TPS.Common.VolumeModel;
 
 namespace TBIDyn
 {
-
-    
     public static class Extracciones
     {
-        #region perfiles
+        #region info de StructureSet
         public static double WED(VVector punto1, VVector punto2, Image ct, List<Hu2Densidad.PuntoCurva> CurvaHU)
         {
             int longitud = Convert.ToInt32(Math.Abs(punto1.y - punto2.y)) + 1; //cantidad de puntos son mm+1 o sea que tengo tantos segmentos como mm
@@ -28,7 +26,7 @@ namespace TBIDyn
             return Hu2Densidad.CalcularWEDLinea(lineaCT, CurvaHU);
         }
 
-        private static Tuple<double, double> diametros50Curva(VVector[] curva, VVector userOrigin, Ecl.Image ct, List<Hu2Densidad.PuntoCurva> CurvaHU)
+        private static Tuple<double, double> diametros50Curva(VVector[] curva, VVector userOrigin, Image ct, List<Hu2Densidad.PuntoCurva> CurvaHU)
         {
             double xmin = curva.OrderBy(c => c.x).First().x;
             double xmax = curva.OrderBy(c => c.x).Last().x;
@@ -46,7 +44,6 @@ namespace TBIDyn
                 if (agrupado.Count() == 2)
                 {
                     listDiams.Add(WED(agrupado.ElementAt(0), agrupado.ElementAt(1), ct, CurvaHU));
-                    //listDiams.Add(Math.Round(Math.Abs(agrupado.ElementAt(0).y - agrupado.ElementAt(1).y)));
                 }
             }
             if (listDiams.Count > 0)
@@ -56,16 +53,15 @@ namespace TBIDyn
             return new Tuple<double, double>(double.NaN, double.NaN);
         }
 
-        public static List<Tuple<double, double>> Diametros50Central(Ecl.PlanSetup plan)
+        public static List<Tuple<double, double>> Diametros50Central(StructureSet ss)
         {
-            var body = plan.StructureSet.Structures.First(s => s.Id == "BODY");
-            //var ss = plan.StructureSet.Structures;
-            var cortes = plan.StructureSet.Image.Series.Images.Count() - 1;
-            VVector userOrigin = plan.StructureSet.Image.UserOrigin;
-            var limitesPulmon = InicioFinLungs(plan);
+            var body = ss.Structures.First(s => s.Id == "BODY");
+            var cortes = ss.Image.Series.Images.Count() - 1;
+            VVector userOrigin = ss.Image.UserOrigin;
+            var limitesPulmon = InicioFinLungs(ss);
             var CurvaHU = Hu2Densidad.CurvaHU();
             List<Tuple<double, double>> diametros50 = new List<Tuple<double, double>>();
-            
+
             for (int i = 0; i < cortes; i++)
             {
                 var corte = body.GetContoursOnImagePlane(i);
@@ -74,7 +70,7 @@ namespace TBIDyn
                     VVector[] curva = corte.OrderBy(c => c.Length).Last();
                     if (HayBodyEnXOrigin(curva, userOrigin))
                     {
-                        diametros50.Add(diametros50Curva(curva, userOrigin, plan.StructureSet.Image, CurvaHU));
+                        diametros50.Add(diametros50Curva(curva, userOrigin, ss.Image, CurvaHU));
                     }
                     else
                     {
@@ -82,7 +78,7 @@ namespace TBIDyn
                         for (int j = 0; j < corte.Length; j++)
                         {
                             var curvaN = corte[j];
-                            var diam = diametros50Curva(curvaN, userOrigin, plan.StructureSet.Image, CurvaHU);
+                            var diam = diametros50Curva(curvaN, userOrigin, ss.Image, CurvaHU);
                             diamsCorte.Add(diam.Item1);
                         }
                         diametros50.Add(new Tuple<double, double>(Math.Round(diamsCorte.Average(), 3), Math.Round(curva.First().z - userOrigin.z, 0)));
@@ -91,4 +87,92 @@ namespace TBIDyn
             }
             return diametros50;
         }
+
+        public static Tuple<double, double> InicioFinLungs(StructureSet ss)
+        {
+            if (!ss.Structures.Any(s => s.Id.ToLower().Contains("lung") || s.Id.ToLower().Contains("pulmon")))
+            {
+                return null;
+            }
+            var lungs = ss.Structures.First(s => s.Id.ToLower().Contains("lung") || s.Id.ToLower().Contains("pulmon"));
+            var cortes = ss.Image.Series.Images.Count() - 1;
+            double inicio = double.NaN;
+            double fin = double.NaN;
+
+            for (int i = 0; i < cortes; i++)
+            {
+                var corte = lungs.GetContoursOnImagePlane(i);
+                if (corte.Length > 0)
+                {
+                    if (double.IsNaN(inicio))
+                    {
+                        inicio = corte.First().First().z;
+                    }
+                    if (double.IsNaN(fin) || corte.First().First().z > fin)
+                    {
+                        fin = corte.First().First().z;
+                    }
+                }
+            }
+            return new Tuple<double, double>(inicio, fin);
+        }
+
+
+
+        public static bool HayBodyEnXOrigin(VVector[] curva, VVector userOrigin)
+        {
+            for (int j = 1; j < curva.Length; j++)
+            {
+                if ((curva[j].x - userOrigin.x) * (curva[j - 1].x - userOrigin.x) < 0)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+
+        public static double ZRodilla(PlanSetup plan) //No funciona óptimo. Igual los planes no paran en rodilla
+        {
+            if (plan.Beams.Any(b => b.Id.Contains("ant1")))
+            {
+                double diamZorigin = DiamZOrigin(plan);
+                VVector userOrgin = plan.StructureSet.Image.UserOrigin;
+                double angGantry = 360 - plan.Beams.Where(b => b.Id.Contains("ant1")).First().ControlPoints.Select(c => c.GantryAngle).Max();
+                double angGantryRad = (angGantry - 11.31) * Math.PI / 180; //11.31 es el angulo del hemicampo
+                return Math.Tan(angGantryRad) * (1224 - diamZorigin / 2);
+            }
+            return double.NaN;
+        }
+        #endregion
+        
+        
+        #region info de Plan
+        public static double DiamZOrigin(PlanSetup plan)
+        {
+            var body = plan.StructureSet.Structures.First(s => s.Id == "BODY");
+            var cortes = plan.StructureSet.Image.Series.Images.Count() - 1;
+            VVector userOrgin = plan.StructureSet.Image.UserOrigin;
+            for (int i = 0; i < cortes; i++)
+            {
+                var corte = body.GetContoursOnImagePlane(i);
+                if (corte.Length > 0)
+                {
+                    VVector[] curva = corte.OrderBy(c => c.Length).Last();
+                    /*if (Math.Round(curva.First().z, 2)>471)
+                    {
+
+                    }*/
+                    if (Math.Round(curva.First().z, 1) == Math.Round(userOrgin.z, 1))
+                    {
+
+                        return Math.Abs(curva.OrderBy(c => c.y).First().y - curva.OrderBy(c => c.y).Last().y); //No es exacto pero es lo más simple
+                    }
+                }
+            }
+            return double.NaN;
+        }
     }
+    #endregion
+}

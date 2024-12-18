@@ -73,7 +73,7 @@ namespace TBIDyn
         public double gantry_cabeza { get; set; }
 
 
-        public void LlenarPaciente(Ecl.Patient paciente, Ecl.Course curso)
+        public void LlenarPaciente(Patient paciente, Course curso)
         {
             ID = paciente.Id;
             Apellido = paciente.LastName;
@@ -86,18 +86,19 @@ namespace TBIDyn
             Dosis = plan.TotalPrescribedDose.Dose/100;
         }
 
-        public void LlenarAnatomia(Ecl.Patient paciente, Ecl.Course curso)
+        public void LlenarAnatomia(Patient paciente, Course curso)
         {
             var plan = curso.PlanSetups.First(p => p.Id.Contains("TBI Ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
+            var ss = plan.StructureSet;
             VVector userOrigin = plan.StructureSet.Image.UserOrigin;
             Vol_body = plan.StructureSet.Structures.First(s => s.Id == "BODY").Volume;
             if (plan.StructureSet.Structures.Any(s => s.Id == "Lungs"))
             {
                 Vol_lungs = plan.StructureSet.Structures.First(s => s.Id == "Lungs").Volume;
             }
-            Diam_origen = Form1.DiamZOrigin(plan);
-            var diametros = Form1.Diametros50Central(plan, "BODY").Where(d => !double.IsNaN(d.Item1));
-            var pulmones = Form1.InicioFinLungs(plan);
+            Diam_origen = Extracciones.DiamZOrigin(plan);
+            var diametros = Extracciones.Diametros50Central(ss).Where(d => !double.IsNaN(d.Item1));
+            var pulmones = Extracciones.InicioFinLungs(ss);
             z_cabeza = diametros.Last().Item2;
             z_pies = diametros.First().Item2;
             z_lung_inf = pulmones.Item1 - userOrigin.z;
