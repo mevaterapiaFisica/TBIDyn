@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using VMS.TPS.Common.Model.API;
+using Ecl = VMS.TPS.Common.Model.API;
 using VMS.TPS.Common.Model.Types;
 using VMS.TPS.Common.VolumeModel;
 

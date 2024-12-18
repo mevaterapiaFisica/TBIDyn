@@ -145,7 +145,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Extracciones.cs" />
     <Compile Include="Minado.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
