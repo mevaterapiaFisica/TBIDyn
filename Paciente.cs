@@ -90,13 +90,13 @@ namespace TBIDyn
         {
             var plan = curso.PlanSetups.First(p => p.Id.Contains("TBI Ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
             var ss = plan.StructureSet;
-            VVector userOrigin = plan.StructureSet.Image.UserOrigin;
-            Vol_body = plan.StructureSet.Structures.First(s => s.Id == "BODY").Volume;
-            if (plan.StructureSet.Structures.Any(s => s.Id == "Lungs"))
+            VVector userOrigin = ss.Image.UserOrigin;
+            Vol_body = ss.Structures.First(s => s.Id == "BODY").Volume;
+            if (ss.Structures.Any(s => s.Id == "Lungs"))
             {
-                Vol_lungs = plan.StructureSet.Structures.First(s => s.Id == "Lungs").Volume;
+                Vol_lungs = ss.Structures.First(s => s.Id == "Lungs").Volume;
             }
-            Diam_origen = Extracciones.DiamZOrigin(plan);
+            Diam_origen = Extracciones.DiamZOrigin(plan.StructureSet);
             var diametros = Extracciones.Diametros50Central(ss).Where(d => !double.IsNaN(d.Item1));
             var pulmones = Extracciones.InicioFinLungs(ss);
             z_cabeza = diametros.Last().Item2;

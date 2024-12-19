@@ -130,14 +130,34 @@ namespace TBIDyn
             }
             return false;
         }
+        public static double DiamZOrigin(StructureSet ss)
+        {
+            var body = ss.Structures.First(s => s.Id == "BODY");
+            var cortes = ss.Image.Series.Images.Count() - 1;
+            VVector userOrgin = ss.Image.UserOrigin;
+            for (int i = 0; i < cortes; i++)
+            {
+                var corte = body.GetContoursOnImagePlane(i);
+                if (corte.Length > 0)
+                {
+                    VVector[] curva = corte.OrderBy(c => c.Length).Last();
+                    if (Math.Round(curva.First().z, 1) == Math.Round(userOrgin.z, 1))
+                    {
+                        return Math.Abs(curva.OrderBy(c => c.y).First().y - curva.OrderBy(c => c.y).Last().y); //No es exacto pero es lo más simple
+                    }
+                }
+            }
+            return double.NaN;
+        }
 
+        #endregion
 
-
+        #region info de Plan
         public static double ZRodilla(PlanSetup plan) //No funciona óptimo. Igual los planes no paran en rodilla
         {
             if (plan.Beams.Any(b => b.Id.Contains("ant1")))
             {
-                double diamZorigin = DiamZOrigin(plan);
+                double diamZorigin = DiamZOrigin(plan.StructureSet);
                 VVector userOrgin = plan.StructureSet.Image.UserOrigin;
                 double angGantry = 360 - plan.Beams.Where(b => b.Id.Contains("ant1")).First().ControlPoints.Select(c => c.GantryAngle).Max();
                 double angGantryRad = (angGantry - 11.31) * Math.PI / 180; //11.31 es el angulo del hemicampo
@@ -145,34 +165,8 @@ namespace TBIDyn
             }
             return double.NaN;
         }
-        #endregion
-        
-        
-        #region info de Plan
-        public static double DiamZOrigin(PlanSetup plan)
-        {
-            var body = plan.StructureSet.Structures.First(s => s.Id == "BODY");
-            var cortes = plan.StructureSet.Image.Series.Images.Count() - 1;
-            VVector userOrgin = plan.StructureSet.Image.UserOrigin;
-            for (int i = 0; i < cortes; i++)
-            {
-                var corte = body.GetContoursOnImagePlane(i);
-                if (corte.Length > 0)
-                {
-                    VVector[] curva = corte.OrderBy(c => c.Length).Last();
-                    /*if (Math.Round(curva.First().z, 2)>471)
-                    {
 
-                    }*/
-                    if (Math.Round(curva.First().z, 1) == Math.Round(userOrgin.z, 1))
-                    {
 
-                        return Math.Abs(curva.OrderBy(c => c.y).First().y - curva.OrderBy(c => c.y).Last().y); //No es exacto pero es lo más simple
-                    }
-                }
-            }
-            return double.NaN;
-        }
     }
     #endregion
 }
