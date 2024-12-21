@@ -167,6 +167,59 @@ namespace TBIDyn
         }
 
 
+
+        #endregion
+
+        #region metodos auxiliares
+
+        public static MetricasRegion MetricasDeLista(List<double> datos)
+        {
+            MetricasRegion metricas = new MetricasRegion();
+            if (datos.Count == 0)
+            {
+                metricas.media = double.NaN;
+                metricas.perc20 = double.NaN;
+                metricas.perc80 = double.NaN;
+                metricas.sd = double.NaN;
+                return metricas;
+            }
+
+            metricas.media = Math.Round(datos.Average(), 3);
+            metricas.sd = Math.Round(CalcularDesviacionEstandar(datos, metricas.media), 3);
+            metricas.perc20 = Math.Round(CalcularPercentil(datos, 20), 3);
+            metricas.perc80 = Math.Round(CalcularPercentil(datos, 80), 3);
+
+            if (metricas.media == double.NaN)
+            {
+
+            }
+            return metricas;
+        }
+
+
+        public static double CalcularDesviacionEstandar(List<double> datos, double media)
+        {
+            double sumaCuadrados = datos.Sum(x => Math.Pow(x - media, 2));
+            return Math.Sqrt(sumaCuadrados / datos.Count);
+        }
+
+        public static double CalcularPercentil(List<double> datos, double percentil)
+        {
+            var datosOrdenados = datos.OrderBy(x => x).ToList();
+            int n = datosOrdenados.Count;
+            double posicion = (percentil / 100.0) * (n - 1);
+            int abajo = (int)Math.Floor(posicion);
+            int arriba = (int)Math.Ceiling(posicion);
+
+            if (abajo == arriba)
+            {
+                return datosOrdenados[abajo];
+            }
+
+            double interpolacion = posicion - abajo;
+            return datosOrdenados[abajo] + interpolacion * (datosOrdenados[arriba] - datosOrdenados[abajo]);
+        }
+        #endregion
+
     }
-    #endregion
 }
