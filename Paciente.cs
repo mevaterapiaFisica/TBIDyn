@@ -78,6 +78,33 @@ namespace TBIDyn
         public double um_por_gray_grado_3 { get; set; }
         public double um_por_gray_grado_4 { get; set; }
 
+        public string ToStringGantry()
+        {
+            return ID + ";" + z_pies.ToString() + ";" + z_rodilla.ToString() + ";" + z_lung_inf.ToString() + ";" + z_lung_sup.ToString() + ";" + z_cabeza.ToString() + ";" +
+                gantry_pies.ToString() + ";" + gantry_rodilla.ToString() + ";" + gantry_lung_inf.ToString() + ";" + gantry_lung_sup.ToString() + ";" + gantry_cabeza.ToString() + ";";
+        }
+
+        public static string GantryCSVHeader()
+        {
+            return "ID;z_pies;z_rodilla;z_lung_inf;z_lung_sup;z_cabeza;gantry_pies;gantry_rodilla;gantry_lung_inf;gantry_lung_sup;gantry_cabeza";
+        }
+        public static string UMCSVHeader()
+        {
+            return "ID;Vol_body;Vol_lungs;med_1;sd_1;perc20_1;perc80_1;med_2;sd_2;perc20_2;perc80_2;med_3;sd_3;perc20_3;perc80_3;med_4;sd_4;perc20_4;perc80_4;" +
+                "um_por_gray_1;um_por_gray_grado_1;um_por_gray_2;um_por_gray_grado_2;um_por_gray_3;um_por_gray_grado_3;um_por_gray_4;um_por_gray_grado_4";
+        }
+
+        public string ToStringUMs()
+        {
+            return ID + ";" + Vol_body.ToString() + ";" + Vol_lungs.ToString() + ";" + med_1.ToString() + ";" + sd_1.ToString() + ";" + perc20_1.ToString() + ";" + perc80_1.ToString() + ";" +
+                med_2.ToString() + ";" + sd_2.ToString() + ";" + perc20_2.ToString() + ";" + perc80_2.ToString() + ";" +
+                med_3.ToString() + ";" + sd_3.ToString() + ";" + perc20_3.ToString() + ";" + perc80_3.ToString() + ";" +
+                med_4.ToString() + ";" + sd_4.ToString() + ";" + perc20_4.ToString() + ";" + perc80_4.ToString() + ";" +
+                um_por_gray_1.ToString() + ";" + um_por_gray_grado_1.ToString() + ";" +
+                um_por_gray_2.ToString() + ";" + um_por_gray_grado_2.ToString() + ";" +
+                um_por_gray_3.ToString() + ";" + um_por_gray_grado_3.ToString() + ";" +
+                um_por_gray_4.ToString() + ";" + um_por_gray_grado_4.ToString() + ";";
+        }
 
         public void AsignarMetricas(int indice, MetricasRegion metricaRegion)
         {
@@ -94,20 +121,20 @@ namespace TBIDyn
             GetType().GetProperty($"ums_por_gray_grado_{indice + 1}").SetValue(this, arco.ums_por_gray_grado);
         }
 
-        public void PredecirParametros(StructureSet ss, Patient paciente, double dosisGy, double zRodilla, Dictionary<string,Modelo> modelos)
+        public void PredecirPaciente(StructureSet ss, Patient paciente, double dosisGy, double zRodilla, Dictionary<string,Modelo> modelos)
         {
             ExtraerDatos(ss, paciente, dosisGy);
             ExtraerAnatomia(ss, paciente, zRodilla);
             LlenarPredicciones(modelos);
         }
-        public void PredecirParametros(Patient paciente, Course curso, Dictionary<string, Modelo> modelos)
+        public void PredecirPaciente(Patient paciente, Course curso, Dictionary<string, Modelo> modelos)
         {
             ExtraerDatos(paciente, curso);
             ExtraerAnatomia(paciente, curso);
             LlenarPredicciones(modelos);
         }
 
-        public void ExtraerFeatures(Patient paciente, Course curso)
+        public void ExtraerPaciente(Patient paciente, Course curso)
         {
             ExtraerDatos(paciente, curso);
             ExtraerAnatomia(paciente, curso);

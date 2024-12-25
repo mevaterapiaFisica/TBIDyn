@@ -35,13 +35,14 @@ namespace TBIDyn
 
 
             VMS.TPS.Common.Model.API.Application app = VMS.TPS.Common.Model.API.Application.CreateApplication("paberbuj", "123qwe");
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
-            List<string> salidasGantry = new List<string>();
-            List<string> salidasUM = new List<string>();
-            List<Minado> lista_features = new List<Minado>();
-            salidasGantry.Add("gantry_pies_plan;gantry_pies_pred;gantry_rodilla_plan;gantry_rodilla_pred;gantry_lung_inf_plan;gantry_lung_inf_pred;gantry_lung_sup_plan;gantry_lung_sup_pred;gantry_cabeza_plan;gantry_cabeza_pred");
-            salidasUM.Add("UM1_plan;UM1_pred;UM2_plan;UM2_pred;UM3_plan;UM3_pred;UM4_plan;UM4_pred");
+            List<string> salidasGantryExtraccion = new List<string>();
+            List<string> salidasUMExtraccion = new List<string>();
+
+            List<string> salidasGantryPrediccion_modelo1 = new List<string>();
+            List<string> salidasUMPrediccion_modelo1 = new List<string>();
+
+            salidasGantryExtraccion.Add(Paciente.GantryCSVHeader());
+            salidasUMExtraccion.Add(Paciente.UMCSVHeader());
             var Modelos = Modelo.InicializarModelos();
             //salidas.Add("media_1;desvest_1;perc20_1;perc80_1;media_2;desvest_2;perc20_2;perc80_2;media_3;desvest_3;perc20_3;perc80_3;media_4;desvest_4;perc20_4;perc80_4;Inicio_1;Fin_1;UM/grado_1;Inicio_2;Fin_2;UM/grado_2;Inicio_3;Fin_3;UM/grado_3;Inicio_4;Fin_4;UM/grado_4");
             var fid = File.ReadAllLines(@"\\ariamevadb-svr\va_data$\PlanHelper\Busquedas\Busqueda_25-11-2024_15_05_06.txt");
@@ -53,33 +54,29 @@ namespace TBIDyn
                 else
                 {*/
                 var paciente = app.OpenPatientById(lineaSplit[0]);
-
                 var curso = paciente.Courses.First(c => c.Id == lineaSplit[3]);
                 var plan = curso.PlanSetups.First(p => p.Id.Contains("TBI Ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
-                Paciente pac = new Paciente();
-                ZRodilla(plan);
-                Minado feat = ExtraerFeatures(curso);
-                if (feat != null && !feat.TieneAlgoNulo())
-                {
-                    lista_features.Add(feat);
-                }
-                pac.ExtraerDatos(paciente, curso);
-                pac.ExtraerAnatomia(paciente, curso);
-                pac.LlenarPredicciones(Modelos);
-                if (feat!=null && pac!=null)
-                {
-                    salidasGantry.Add(feat.arcos[0].gantry_inicio.ToString() + ";" + pac.gantry_pies.ToString() + ";" + feat.arcos[1].gantry_inicio.ToString() + ";" + pac.gantry_rodilla.ToString() + ";" + feat.arcos[2].gantry_inicio.ToString() + ";" + pac.gantry_lung_inf.ToString() + ";" + feat.arcos[3].gantry_inicio.ToString() + ";" + pac.gantry_lung_sup.ToString() + ";" + feat.arcos[3].gantry_fin.ToString() + ";" + pac.gantry_cabeza.ToString());
-                    salidasUM.Add(feat.arcos[0].um_por_gray.ToString() + ";" + pac.um_por_gray_1 + ";" + feat.arcos[1].um_por_gray.ToString() + ";" + pac.um_por_gray_2 + ";" + feat.arcos[2].um_por_gray.ToString() + ";" + pac.um_por_gray_3 + ";" + feat.arcos[3].um_por_gray.ToString() + ";" + pac.um_por_gray_4);
-                }
+
+                //para extraer
+                Paciente pacExtraccion = new Paciente();
+                pacExtraccion.ExtraerPaciente(paciente, curso);
+                salidasGantryExtraccion.Add(pacExtraccion.ToStringGantry());
+                salidasUMExtraccion.Add(pacExtraccion.ToStringUMs());
+                
+                //para predecir
+                Paciente pacPredicho = new Paciente();
+                pacPredicho.PredecirPaciente(paciente,curso,Modelos);
+                salidasGantryPrediccion_modelo1.Add(pacPredicho.ToStringGantry());
+                salidasUMPrediccion_modelo1.Add(pacPredicho.ToStringUMs());
+
                 app.ClosePatient();
                 //}
             }
-            Minado.EscribirCSVs(lista_features);
-            File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\salidaGantry.txt", salidasGantry);
-            File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\salidaUM.txt", salidasUM);
-            //File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\Arco3.csv", Feature.Arco3_CSV(lista_features).ToArray());
-            var elap = sw.Elapsed;
-            //DcmTBIDin();
+            File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\salidaGantryExtraccion.txt", salidasGantryExtraccion);
+            File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\salidaUMExtraccion.txt", salidasUMExtraccion);
+
+            File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\salidaGantryPrediccion_modelo1.txt", salidasGantryPrediccion_modelo1);
+            File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\salidaUMPrediccion_modelo1.txt", salidasUMPrediccion_modelo1);
             InitializeComponent();
             this.Close();
         }
@@ -140,7 +137,7 @@ namespace TBIDyn
             return export;
         }*/
 
-        public static Tuple<double, double> InicioFinLungs(PlanSetup plan)
+        /*public static Tuple<double, double> InicioFinLungs(PlanSetup plan)
         {
             if (!plan.StructureSet.Structures.Any(s => s.Id.ToLower().Contains("lung") || s.Id.ToLower().Contains("pulmon")))
             {
@@ -177,9 +174,9 @@ namespace TBIDyn
             return new Tuple<double, double>(inicio, fin);
 
 
-        }
+        }*/
 
-        public static double ZRodilla(PlanSetup plan) //No funciona óptimo. Igual los planes no paran en rodilla
+        /*public static double ZRodilla(PlanSetup plan) //No funciona óptimo. Igual los planes no paran en rodilla
         {
             if (plan.Beams.Any(b => b.Id.Contains("ant1")))
             {
@@ -190,9 +187,9 @@ namespace TBIDyn
                 return Math.Tan(angGantryRad) * (1224 - diamZorigin / 2);
             }
             return double.NaN;
-        }
+        }*/
 
-        public static double DiamZOrigin(PlanSetup plan)
+        /*public static double DiamZOrigin(PlanSetup plan)
         {
             var body = plan.StructureSet.Structures.First(s => s.Id == "BODY");
             var cortes = plan.StructureSet.Image.Series.Images.Count() - 1;
@@ -203,10 +200,10 @@ namespace TBIDyn
                 if (corte.Length > 0)
                 {
                     VVector[] curva = corte.OrderBy(c => c.Length).Last();
-                    /*if (Math.Round(curva.First().z, 2)>471)
+                    if (Math.Round(curva.First().z, 2)>471)
                     {
 
-                    }*/
+                    }
                     if (Math.Round(curva.First().z, 1) == Math.Round(userOrgin.z, 1))
                     {
 
@@ -215,8 +212,8 @@ namespace TBIDyn
                 }
             }
             return double.NaN;
-        }
-        public static List<string> Perfiles50Central(PlanSetup plan, string estructura)
+        }*/
+        /*public static List<string> Perfiles50Central(PlanSetup plan, string estructura)
         {
             var body = plan.StructureSet.Structures.First(s => s.Id == estructura);
             //var ss = plan.StructureSet.Structures;
@@ -251,9 +248,9 @@ namespace TBIDyn
                 }
             }
             return export;
-        }
+        }*/
 
-        public static List<Tuple<double, double>> Diametros50Central(PlanSetup plan, string estructura)
+        /*public static List<Tuple<double, double>> Diametros50Central(PlanSetup plan, string estructura)
         {
             var body = plan.StructureSet.Structures.First(s => s.Id == estructura);
             //var ss = plan.StructureSet.Structures;
@@ -289,9 +286,9 @@ namespace TBIDyn
                 }
             }
             return diametros50;
-        }
+        }*/
 
-        private static Tuple<double, double> diametros50Curva(VVector[] curva, VVector userOrigin, VMS.TPS.Common.Model.API.Image ct, List<Hu2Densidad.PuntoCurva> CurvaHU)
+        /*private static Tuple<double, double> diametros50Curva(VVector[] curva, VVector userOrigin, VMS.TPS.Common.Model.API.Image ct, List<Hu2Densidad.PuntoCurva> CurvaHU)
         {
             double xmin = curva.OrderBy(c => c.x).First().x;
             double xmax = curva.OrderBy(c => c.x).Last().x;
@@ -319,9 +316,9 @@ namespace TBIDyn
             return new Tuple<double, double>(double.NaN, double.NaN);
 
 
-        }
+        }*/
 
-        public static double WED(VVector punto1, VVector punto2, VMS.TPS.Common.Model.API.Image ct, List<Hu2Densidad.PuntoCurva> CurvaHU)
+        /*public static double WED(VVector punto1, VVector punto2, VMS.TPS.Common.Model.API.Image ct, List<Hu2Densidad.PuntoCurva> CurvaHU)
         {
             int longitud = Convert.ToInt32(Math.Abs(punto1.y - punto2.y)) + 1; //cantidad de puntos son mm+1 o sea que tengo tantos segmentos como mm
             if (longitud == 2)
@@ -332,9 +329,9 @@ namespace TBIDyn
 
             ct.GetImageProfile(punto1, punto2, lineaCT);
             return Hu2Densidad.CalcularWEDLinea(lineaCT, CurvaHU);
-        }
+        }*/
 
-        public static Minado ExtraerFeatures(Course curso)
+        /*public static Minado ExtraerFeatures(Course curso)
         {
             Minado feature = new Minado();
             if (curso.PlanSetups.Any(p => p.Id == "TBI Ant") && curso.PlanSetups.Any(p => p.Id == "TBI Post"))
@@ -382,15 +379,16 @@ namespace TBIDyn
                 {
                     output += ar.gantry_inicio.ToString() + ";" + ar.gantry_fin.ToString() + ";" + Math.Round(ar.um_por_gray, 2).ToString() + ";";
                 }
-                return output;*/
+                return output;
                 return feature;
             }
             else
             {
                 return null;
             }
-        }
-        public static MetricasRegion MetricasDeLista(List<double> datos)
+        }*/
+        
+        /*public static MetricasRegion MetricasDeLista(List<double> datos)
         {
             MetricasRegion metricas = new MetricasRegion();
             if (datos.Count == 0)
@@ -464,7 +462,8 @@ namespace TBIDyn
             double promedioSup = centroSuperior.Average(c => c.y);
             double promedioInf = centroInferior.Average(c => c.y);
             return new Tuple<double, double>(promedioSup, promedioInf);
-        }
+        }*/
+        
         public static void DcmTBIDin()
         {
             //var file = DicomFile.Open(planTBI);
