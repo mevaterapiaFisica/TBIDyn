@@ -64,10 +64,10 @@ namespace TBIDyn
                 salidasUMExtraccion.Add(pacExtraccion.ToStringUMs());
                 
                 //para predecir
-                Paciente pacPredicho = new Paciente();
+                /*Paciente pacPredicho = new Paciente();
                 pacPredicho.PredecirPaciente(paciente,curso,Modelos);
                 salidasGantryPrediccion_modelo1.Add(pacPredicho.ToStringGantry());
-                salidasUMPrediccion_modelo1.Add(pacPredicho.ToStringUMs());
+                salidasUMPrediccion_modelo1.Add(pacPredicho.ToStringUMs());*/
 
                 app.ClosePatient();
                 //}
@@ -75,10 +75,10 @@ namespace TBIDyn
             File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\salidaGantryExtraccion.txt", salidasGantryExtraccion);
             File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\salidaUMExtraccion.txt", salidasUMExtraccion);
 
-            File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\salidaGantryPrediccion_modelo1.txt", salidasGantryPrediccion_modelo1);
-            File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\salidaUMPrediccion_modelo1.txt", salidasUMPrediccion_modelo1);
+            //para predecir
+            /*File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\salidaGantryPrediccion_modelo1.txt", salidasGantryPrediccion_modelo1);
+            File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\salidaUMPrediccion_modelo1.txt", salidasUMPrediccion_modelo1);*/
             InitializeComponent();
-            this.Close();
         }
 
 

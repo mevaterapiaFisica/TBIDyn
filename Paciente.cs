@@ -117,8 +117,8 @@ namespace TBIDyn
         public void AsignarParametrosArco(int indice, Arco arco)
         {
             GetType().GetProperty($"long_arco_{indice + 1}").SetValue(this, arco.long_arco);
-            GetType().GetProperty($"ums_por_gray_{indice + 1}").SetValue(this, arco.um_por_gray);
-            GetType().GetProperty($"ums_por_gray_grado_{indice + 1}").SetValue(this, arco.ums_por_gray_grado);
+            GetType().GetProperty($"um_por_gray_{indice + 1}").SetValue(this, arco.um_por_gray);
+            GetType().GetProperty($"um_por_gray_grado_{indice + 1}").SetValue(this, arco.ums_por_gray_grado);
         }
 
         public void PredecirPaciente(StructureSet ss, Patient paciente, double dosisGy, double zRodilla, Dictionary<string,Modelo> modelos)
@@ -177,7 +177,7 @@ namespace TBIDyn
             z_pies = diametros.First().Item2;
             z_lung_inf = pulmones.Item1 - userOrigin.z;
             z_lung_sup = pulmones.Item2 - userOrigin.z;
-            z_rodilla = zRodilla - userOrigin.z;
+            z_rodilla = -zRodilla;// - userOrigin.z;
 
             List<List<double>> diametrosZonas = new List<List<double>>
             {
