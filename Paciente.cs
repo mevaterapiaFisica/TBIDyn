@@ -9,6 +9,8 @@ using VMS.TPS.Common.Model.API;
 using VMS.TPS.Common.Model.Types;
 using VMS.TPS.Common.VolumeModel;
 using System.Windows.Forms;
+using FellowOakDicom.IO;
+using FellowOakDicom;
 
 namespace TBIDyn
 {
@@ -254,7 +256,7 @@ namespace TBIDyn
                 var modelo2 = modelos.First(m => m.Key == sModelo2).Value;
                 valor = (valor + modelo2.Predecir(modelo2.ObtenerFeatures(this))) / 2;
             }
-            return Math.Round(valor, 0);
+            return Math.Round(valor, 3);
         }
 
         public static double LongitudArco(double gantry_inicio, double gantry_fin)
@@ -267,6 +269,22 @@ namespace TBIDyn
             {
                 return 360 - Math.Max(gantry_fin, gantry_inicio) + Math.Min(gantry_fin, gantry_inicio);
             }
+        }
+
+        public void EscribirDCM_Ant()
+        {
+            DicomFile dicomFile = DicomFile.Open(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\TBI Ant.dcm");
+            DicomDataset dataset = dicomFile.Dataset;
+            dataset.AddOrUpdate(DicomTag.PatientName, this.Apellido.ToUpper() + "^" + this.Nombre.ToUpper());
+            dataset.AddOrUpdate(DicomTag.PatientID, this.ID);
+            dataset.AddOrUpdate(DicomTag.StudyInstanceUID, this.Study_UID);
+            dataset.AddOrUpdate(DicomTag.SeriesInstanceUID, this.Serie_UID);
+            dataset.AddOrUpdate(DicomTag.StudyInstanceUID, this.Study_UID);
+            dataset.AddOrUpdate(DicomTag.FrameOfReferenceUID, this.FOR_UID);
+            //dataset.AddOrUpdate(DicomTag.StructurSetRe, this.Study_UID);
+            DicomSequence structureSetReference = dataset.GetSequence(DicomTag.ReferencedStructureSetSequence);
+            structureSetReference.First().AddOrUpdate(DicomTag.ReferencedSOPInstanceUID, this.StructureSet_UID);
+
         }
 
 
