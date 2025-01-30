@@ -26,7 +26,9 @@ namespace TBIDyn
         public string Serie_UID { get; set; }
         public string StructureSet_UID { get; set; }
 
-        public double Dosis { get; set; } //dosis en Gy
+        public double DosisTotal { get; set; } //dosis en Gy
+        public double DosisFraccion { get; set; } //dosis en Gy
+        public int NumFraciones { get; set; }
 
         //ExtraerAnatomia
         public double Vol_body { get; set; }
@@ -123,45 +125,49 @@ namespace TBIDyn
             GetType().GetProperty($"um_por_gray_grado_{indice + 1}").SetValue(this, arco.ums_por_gray_grado);
         }
 
-        public void PredecirPaciente(StructureSet ss, Patient paciente, double dosisGy, double zRodilla, Dictionary<string,Modelo> modelos)
+        public void PredecirPaciente(StructureSet ss, Patient paciente, double dosisGy, double zRodilla, Dictionary<string, Modelo> modelos, Course curso, int numFx)
         {
-            ExtraerDatos(ss, paciente, dosisGy);
+            ExtraerDatos(ss, paciente, dosisGy, curso, numFx);
             ExtraerAnatomia(ss, paciente, zRodilla);
             LlenarPredicciones(modelos);
         }
-        public void PredecirPaciente(Patient paciente, Course curso, Dictionary<string, Modelo> modelos)
+        public void PredecirPaciente(Patient paciente, Course curso, Dictionary<string, Modelo> modelos, int numFx)
         {
-            ExtraerDatos(paciente, curso);
+            ExtraerDatos(paciente, curso, numFx);
             ExtraerAnatomia(paciente, curso);
             LlenarPredicciones(modelos);
         }
 
-        public void ExtraerPaciente(Patient paciente, Course curso)
+        public void ExtraerPaciente(Patient paciente, Course curso,int numFx)
         {
-            ExtraerDatos(paciente, curso);
+            ExtraerDatos(paciente, curso,numFx);
             ExtraerAnatomia(paciente, curso);
             ExtraerFeatures(curso);
         }
 
-        public void ExtraerDatos(StructureSet ss, Patient paciente, double dosisGy)
+        public void ExtraerDatos(StructureSet ss, Patient paciente, double dosisGy, Course curso, int numFx) //despues sacar curso y obtener Serie Instance UID de context
         {
+            var plan = curso.PlanSetups.First(p => p.Id.Contains("TBI Ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
             ID = paciente.Id;
             Apellido = paciente.LastName;
             Nombre = paciente.FirstName;
             //var plan = curso.PlanSetups.First(p => p.Id.Contains("TBI Ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
             StructureSet_UID = ss.UID;
-            Serie_UID = ss.Image.Series.UID;
+            Serie_UID = plan.SeriesUID;
+            //Serie_UID = ss.Image.Series.UID;
             Study_UID = ss.Image.Series.Study.UID;
             FOR_UID = ss.Image.FOR;
-            Dosis = dosisGy;
+            DosisFraccion = dosisGy;
+            NumFraciones = numFx;
+
         }
 
-        public void ExtraerDatos(Patient paciente, Course curso)
+        public void ExtraerDatos(Patient paciente, Course curso, int numFx)
         {
             var plan = curso.PlanSetups.First(p => p.Id.Contains("TBI Ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
             StructureSet ss = plan.StructureSet;
             double Dosis = plan.TotalPrescribedDose.Dose / 100;
-            ExtraerDatos(ss, paciente, Dosis);
+            ExtraerDatos(ss, paciente, Dosis,curso, numFx);
         }
 
         public void ExtraerAnatomia(StructureSet ss, Patient paciente, double zRodilla)
@@ -202,15 +208,15 @@ namespace TBIDyn
             ExtraerAnatomia(ss, paciente, Extracciones.ZRodilla(plan));
         }
 
-        public void LlenarPredicciones(Dictionary<string,Modelo> modelos)
+        public void LlenarPredicciones(Dictionary<string, Modelo> modelos)
         {
             gantry_pies = PredecirValor(modelos, "gantry_inicio_1");
             gantry_rodilla = PredecirValor(modelos, "gantry_fin_1", "gantry_inicio_2");
             gantry_lung_inf = PredecirValor(modelos, "gantry_fin_2", "gantry_inicio_3");
             gantry_lung_sup = PredecirValor(modelos, "gantry_fin_3", "gantry_inicio_4");
             gantry_cabeza = PredecirValor(modelos, "gantry_fin_4");
-            
-            
+
+
             long_arco_1 = LongitudArco(gantry_pies, gantry_rodilla);
             long_arco_2 = LongitudArco(gantry_rodilla, gantry_lung_inf);
             long_arco_3 = LongitudArco(gantry_lung_inf, gantry_lung_sup);
@@ -275,19 +281,211 @@ namespace TBIDyn
         {
             DicomFile dicomFile = DicomFile.Open(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\TBI Ant.dcm");
             DicomDataset dataset = dicomFile.Dataset;
+            dataset.AddOrUpdate(DicomTag.SOPInstanceUID, dataset.GetSingleValue<string>(DicomTag.SOPInstanceUID)+ new Random().Next().ToString());
             dataset.AddOrUpdate(DicomTag.PatientName, this.Apellido.ToUpper() + "^" + this.Nombre.ToUpper());
             dataset.AddOrUpdate(DicomTag.PatientID, this.ID);
             dataset.AddOrUpdate(DicomTag.StudyInstanceUID, this.Study_UID);
             dataset.AddOrUpdate(DicomTag.SeriesInstanceUID, this.Serie_UID);
             dataset.AddOrUpdate(DicomTag.StudyInstanceUID, this.Study_UID);
             dataset.AddOrUpdate(DicomTag.FrameOfReferenceUID, this.FOR_UID);
+            dataset.AddOrUpdate(DicomTag.ApprovalStatus, "UNAPPROVED");
+            dataset.AddOrUpdate(DicomTag.RTPlanLabel, "TBI Ant_mod");
+            //var ExtendedInterface = ;
+
+            //dataset.Remove(DicomTag.Parse("3253,1000"));
+            
+            dataset.Remove(new DicomTag(12883, 4096,"Varian Medical Systems VISION 3253"));
+            dataset.Remove(new DicomTag(12883, 4097, "Varian Medical Systems VISION 3253"));
+            dataset.Remove(new DicomTag(12883, 4098, "Varian Medical Systems VISION 3253"));
+            dataset.Remove(new DicomTag(12935, 4096, "Varian Medical Systems VISION 3287"));
+            dataset.Remove(new DicomTag(12935, 0016));
+            dataset.Remove(new DicomTag(12935, 0017));
+            dataset.Remove(new DicomTag(12883, 0016));
+            //var dt = new DicomTag(12883, 0016, "Varian Medical Systems VISION 3253");
             //dataset.AddOrUpdate(DicomTag.StructurSetRe, this.Study_UID);
             DicomSequence structureSetReference = dataset.GetSequence(DicomTag.ReferencedStructureSetSequence);
             structureSetReference.First().AddOrUpdate(DicomTag.ReferencedSOPInstanceUID, this.StructureSet_UID);
+            DicomSequence doseReferenceSequence = dataset.GetSequence(DicomTag.DoseReferenceSequence);
+            doseReferenceSequence.First().AddOrUpdate(DicomTag.DeliveryMaximumDose, this.DosisFraccion);
+            doseReferenceSequence.First().AddOrUpdate(DicomTag.OrganAtRiskMaximumDose, this.DosisFraccion);
+            doseReferenceSequence.First().Remove(DicomTag.DoseReferenceUID);
+            doseReferenceSequence.First().AddOrUpdate(DicomVR.LO, new DicomTag(12903, 4096, "Varian Medical Systems VISION 3267"), "BODY1");
+            DicomSequence beamSequence = dataset.GetSequence(DicomTag.BeamSequence);
+            DicomSequence fractionGroupSequence = dataset.GetSequence(DicomTag.FractionGroupSequence);
+            fractionGroupSequence.First().AddOrUpdate(DicomTag.NumberOfFractionsPlanned, this.NumFraciones);
+            fractionGroupSequence.First().AddOrUpdate(DicomTag.NumberOfBeams, TotalDeArcos());
 
+            DicomSequence referencedBeamSequence = fractionGroupSequence.First().GetSequence(DicomTag.ReferencedBeamSequence);
+            
+            DicomSequence patientSetupSequence = dataset.GetSequence(DicomTag.PatientSetupSequence);
+            DicomDataset patientSetupModelo = patientSetupSequence.First().Clone();
+            patientSetupSequence.Items.Clear();
+            DicomDataset beamModelo = beamSequence.First().Clone();
+            
+            beamSequence.Items.Clear();
+            
+            DicomDataset referencedBeamModelo = referencedBeamSequence.First().Clone();
+            referencedBeamSequence.Items.Clear();
+
+            for (int i = 1; i < 5; i++)
+            {
+                for (int j = 1; j < NumArcos(i) + 1; j++)
+                {
+                    beamSequence.Items.Add(ArcoADDCM(i, j, beamModelo, false)); //para Anterior;
+                    referencedBeamSequence.Items.Add(ReferenceBeam(i, j, false, referencedBeamModelo));
+                    patientSetupSequence.Items.Add(PatientSetup(i, j, false, patientSetupModelo));
+                }
+            }
+            dicomFile.Save(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\Import\TBI Ant_mod.dcm");
         }
 
+        public int SubArcoNumero(int arco, int subarco)
+        {
+            int contador = 0;
+            for (int i = 1; i < arco; i++)
+            {
+                contador += NumArcos(i);
+            }
+            return contador + subarco;
+        }
 
+        public int TotalDeArcos()
+        {
+            int contador = 0;
+            for (int i = 1; i < 5; i++)
+            {
+                contador += NumArcos(i);
+            }
+            return contador;
+        }
 
+        public int NumArcos(int arco)
+        {
+            if (arco == 3)
+            {
+                double velocidad = LongitudArco(this.gantry_lung_inf, this.gantry_lung_sup) / (um_por_gray_3/4 * DosisFraccion);
+                return Convert.ToInt32(Math.Ceiling(0.3 / velocidad));
+            }
+            else
+            {
+                double um_por_gray_grado = 0;
+                if (arco == 1)
+                {
+                    um_por_gray_grado = this.um_por_gray_grado_1;
+                }
+                else if (arco == 2)
+                {
+                    um_por_gray_grado = this.um_por_gray_grado_2;
+                }
+                else
+                {
+                    um_por_gray_grado = this.um_por_gray_grado_4;
+                }
+                return Convert.ToInt32(Math.Ceiling(um_por_gray_grado/4 * DosisFraccion / 20));
+            }
+        }
+
+        public DicomDataset ArcoADDCM(int arco, int subarco, DicomDataset beamModelo, bool esPos)
+        {
+            double gantry_inicio;
+            double gantry_fin;
+            double UM_total;
+            string prefijo = "ant";
+            if (esPos)
+            {
+                prefijo = "pos";
+            }
+            string nombreCampo = prefijo + arco.ToString() + "." + subarco.ToString();
+            double dose_rate = 300;
+            if (arco == 1)
+            {
+                gantry_inicio = gantry_pies;
+                gantry_fin = gantry_rodilla;
+                UM_total = um_por_gray_1 * DosisFraccion;
+            }
+            else if (arco == 2)
+            {
+                gantry_inicio = gantry_rodilla;
+                gantry_fin = gantry_lung_inf;
+                UM_total = um_por_gray_2 * DosisFraccion;
+            }
+            else if (arco == 3)
+            {
+                gantry_inicio = gantry_lung_inf;
+                gantry_fin = gantry_lung_sup;
+                UM_total = um_por_gray_3 * DosisFraccion;
+                dose_rate = 100;
+            }
+            else
+            {
+                gantry_inicio = gantry_lung_sup;
+                gantry_fin = gantry_cabeza;
+                UM_total = um_por_gray_4 * DosisFraccion;
+            }
+            DicomDataset nuevoArco = beamModelo.Clone();
+            nuevoArco.AddOrUpdate(DicomTag.BeamNumber, SubArcoNumero(arco, subarco));
+            nuevoArco.AddOrUpdate(DicomTag.BeamName, nombreCampo);
+            var primerControlPoint = nuevoArco.GetSequence(DicomTag.ControlPointSequence).First();
+            var segundoControlPoint = nuevoArco.GetSequence(DicomTag.ControlPointSequence).Last();
+            primerControlPoint.AddOrUpdate(DicomTag.DoseRateSet, dose_rate);
+            if (subarco % 2 != 0) //es inpar
+            {
+                primerControlPoint.AddOrUpdate(DicomTag.GantryAngle, gantry_inicio);
+                primerControlPoint.AddOrUpdate(DicomTag.GantryRotationDirection, "CW");
+                segundoControlPoint.AddOrUpdate(DicomTag.GantryAngle, gantry_fin);
+            }
+            else
+            {
+                primerControlPoint.AddOrUpdate(DicomTag.GantryAngle, gantry_fin);
+                primerControlPoint.AddOrUpdate(DicomTag.GantryRotationDirection, "CC");
+                segundoControlPoint.AddOrUpdate(DicomTag.GantryAngle, gantry_inicio);
+            }
+            //FALTA AGREGAR ISOCENTRO!!!!!!!!!!!!!!!
+            nuevoArco.Remove(DicomTag.ReferencedReferenceImageSequence);
+            return nuevoArco;
+        }
+
+        public DicomDataset PatientSetup(int arco, int subarco, bool esPost, DicomDataset modelo)
+        {
+            string posicion = "HFS";
+            if (esPost)
+            {
+                posicion = "HFP";
+            }
+            DicomDataset nuevoPatientSetup = modelo.Clone();
+            nuevoPatientSetup.AddOrUpdate(DicomTag.PatientPosition, posicion);
+            nuevoPatientSetup.AddOrUpdate(DicomTag.PatientSetupNumber, SubArcoNumero(arco, subarco));
+            return nuevoPatientSetup;
+        }
+
+        public DicomDataset ReferenceBeam(int arco, int subarco, bool esPost, DicomDataset modelo)
+        {
+            DicomDataset nuevoReferenceBeam = modelo.Clone();
+            nuevoReferenceBeam.AddOrUpdate(DicomTag.BeamMeterset, UMArco(arco) / NumArcos(arco));
+            nuevoReferenceBeam.AddOrUpdate(DicomTag.ReferencedBeamNumber, SubArcoNumero(arco, subarco));
+            return nuevoReferenceBeam;
+        }
+
+        public double UMArco(int arco)
+        {
+            double um = 0;
+            if (arco == 1)
+            {
+                um = um_por_gray_1 * DosisFraccion;
+            }
+            else if (arco == 2)
+            {
+                um = um_por_gray_2 * DosisFraccion;
+            }
+            else if (arco == 3)
+            { 
+                um = um_por_gray_3 * DosisFraccion;
+            }
+            else
+            {
+                um = um_por_gray_4 * DosisFraccion;
+            }
+            return um;
+        }
     }
 }
