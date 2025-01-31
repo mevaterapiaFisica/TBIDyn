@@ -72,6 +72,10 @@ namespace TBIDyn
         public double long_arco_3 { get; set; }
         public double long_arco_4 { get; set; }
 
+        public double weight_por_norm_1 { get; set; }
+        public double weight_por_norm_2 { get; set; }
+        public double weight_por_norm_3 { get; set; }
+        public double weight_por_norm_4 { get; set; }
         public double um_por_gray_1 { get; set; }
         public double um_por_gray_2 { get; set; }
         public double um_por_gray_3 { get; set; }
@@ -123,6 +127,7 @@ namespace TBIDyn
             GetType().GetProperty($"long_arco_{indice + 1}").SetValue(this, arco.long_arco);
             GetType().GetProperty($"um_por_gray_{indice + 1}").SetValue(this, arco.um_por_gray);
             GetType().GetProperty($"um_por_gray_grado_{indice + 1}").SetValue(this, arco.ums_por_gray_grado);
+            GetType().GetProperty($"weight_por_norm_{indice + 1}").SetValue(this, arco.ums_por_gray_grado);
         }
 
         public void PredecirPaciente(StructureSet ss, Patient paciente, double dosisGy, double zRodilla, Dictionary<string, Modelo> modelos, Course curso, int numFx)

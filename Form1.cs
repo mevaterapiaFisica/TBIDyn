@@ -50,18 +50,18 @@ namespace TBIDyn
             {
                 var lineaSplit = linea.Split(';');
 
-                /*var paciente = app.OpenPatientById(lineaSplit[0]);
+                var paciente = app.OpenPatientById(lineaSplit[0]);
                 var curso = paciente.Courses.First(c => c.Id == lineaSplit[3]);
                 var plan = curso.PlanSetups.First(p => p.Id.Contains("TBI Ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
 
                 //para extraer
                 Paciente pacExtraccion = new Paciente();
-                pacExtraccion.ExtraerPaciente(paciente, curso);
+                pacExtraccion.ExtraerPaciente(paciente, curso,(int)plan.UniqueFractionation.NumberOfFractions);
                 salidasGantryExtraccion.Add(pacExtraccion.ToStringGantry());
-                salidasUMExtraccion.Add(pacExtraccion.ToStringUMs());*/
+                salidasUMExtraccion.Add(pacExtraccion.ToStringUMs());
 
                 //para predecir
-                var paciente = app.OpenPatientById("1-111045-0");
+                /*var paciente = app.OpenPatientById("1-111045-0");
                 var curso = paciente.Courses.First(c => c.Id == "C0_Ene25");
                 var plan = curso.PlanSetups.First(p => p.Id.Contains("TBI Ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
                 Paciente pacPredicho = new Paciente();
@@ -72,7 +72,7 @@ namespace TBIDyn
                 pacExtraccion.EscribirDCM_Ant();
                 pacPredicho.PredecirPaciente(paciente,curso,Modelos,numFx);
                 salidasGantryPrediccion_modelo1.Add(pacPredicho.ToStringGantry());
-                salidasUMPrediccion_modelo1.Add(pacPredicho.ToStringUMs());
+                salidasUMPrediccion_modelo1.Add(pacPredicho.ToStringUMs());*/
 
                 app.ClosePatient();
                 //}

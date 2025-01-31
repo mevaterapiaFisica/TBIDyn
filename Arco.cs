@@ -17,7 +17,9 @@ namespace TBIDyn
         public double long_arco;
         public double um_por_gray;
         public double ums_por_gray_grado;
-        public Arco(string _nombre, double _gantry_i, double _gantry_f, double _um_por_gray)
+        public double weight_por_norm;
+        public double normalizacion;
+        public Arco(string _nombre, double _gantry_i, double _gantry_f, double _um_por_gray, double _weight_por_norm, double _normalizacion)
         {
             nombre = _nombre;
             gantry_inicio = _gantry_i;
@@ -25,6 +27,8 @@ namespace TBIDyn
             long_arco = Paciente.LongitudArco(_gantry_i, _gantry_f);
             um_por_gray = _um_por_gray;
             ums_por_gray_grado = _um_por_gray / long_arco;
+            weight_por_norm = _weight_por_norm;
+            normalizacion = _normalizacion;
         }
 
         public Arco(PlanSetup plan, string nombre)
@@ -55,10 +59,12 @@ namespace TBIDyn
                 if ((arco.ControlPoints.First().GantryAngle == gantry_inicio || arco.ControlPoints.First().GantryAngle == gantry_fin) && (arco.ControlPoints.Last().GantryAngle == gantry_inicio || arco.ControlPoints.Last().GantryAngle == gantry_fin))
                 {
                     um_por_gray += arco.Meterset.Value;
+                    weight_por_norm += arco.WeightFactor / plan.PlanNormalizationValue; //tengo que dividir por la dosis por fraccion?
                 }
             }
             um_por_gray = um_por_gray / (plan.UniqueFractionation.PrescribedDosePerFraction.Dose / 100);
             ums_por_gray_grado = um_por_gray / long_arco;
+            normalizacion = plan.PlanNormalizationValue;
         }
         public override string ToString()
         {
@@ -107,7 +113,7 @@ namespace TBIDyn
             {
                 Arco arco_ant = arcos[i];
                 Arco arco_post = arcos[i + 4];
-                Arco arco = new Arco((i + 1).ToString(), (arco_ant.gantry_inicio + arco_post.gantry_inicio) / 2, (arco_ant.gantry_fin + arco_post.gantry_fin) / 2, (arco_ant.um_por_gray + arco_post.um_por_gray) / 2);
+                Arco arco = new Arco((i + 1).ToString(), (arco_ant.gantry_inicio + arco_post.gantry_inicio) / 2, (arco_ant.gantry_fin + arco_post.gantry_fin) / 2, (arco_ant.um_por_gray + arco_post.um_por_gray) / 2,(arco_ant.weight_por_norm + arco_post.weight_por_norm)/2,arco_ant.normalizacion);
                 arcosUnificados.Add(arco);
             }
 
