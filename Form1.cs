@@ -35,50 +35,67 @@ namespace TBIDyn
 
 
             VMS.TPS.Common.Model.API.Application app = VMS.TPS.Common.Model.API.Application.CreateApplication("paberbuj", "123qwe");
-            List<string> salidasGantryExtraccion = new List<string>();
+            /*List<string> salidasGantryExtraccion = new List<string>();
             List<string> salidasUMExtraccion = new List<string>();
 
             List<string> salidasGantryPrediccion_modelo1 = new List<string>();
             List<string> salidasUMPrediccion_modelo1 = new List<string>();
 
             salidasGantryExtraccion.Add(Paciente.GantryCSVHeader());
-            salidasUMExtraccion.Add(Paciente.UMCSVHeader());
+            salidasUMExtraccion.Add(Paciente.UMCSVHeader());*/
             var Modelos = Modelo.InicializarModelos();
+            List<string> diferencias = new List<string>();
+            diferencias.Add("g_pies;g_rodilla;g_lung_inf;g_lung_sup;g_cabeza;w_1;w_2;w_3;w_4;um_1;um_2;um_3;um_4");
             //salidas.Add("media_1;desvest_1;perc20_1;perc80_1;media_2;desvest_2;perc20_2;perc80_2;media_3;desvest_3;perc20_3;perc80_3;media_4;desvest_4;perc20_4;perc80_4;Inicio_1;Fin_1;UM/grado_1;Inicio_2;Fin_2;UM/grado_2;Inicio_3;Fin_3;UM/grado_3;Inicio_4;Fin_4;UM/grado_4");
-            var fid = File.ReadAllLines(@"\\ariamevadb-svr\va_data$\PlanHelper\Busquedas\Busqueda_25-11-2024_15_05_06.txt");
+            List<Paciente> pacientesExtraccion = new List<Paciente>();
+            List<Paciente> pacientesPrediccion = new List<Paciente>();
+            var fid = File.ReadAllLines(@"\\ariamevadb-svr\va_data$\PlanHelper\Busquedas\TBI_feb25.txt");
             foreach (var linea in fid.Skip(1))
             {
-                var lineaSplit = linea.Split(';');
 
+                var lineaSplit = linea.Split(';');
+                if (lineaSplit[0]== "1-107350-0")
+                {
+                    continue;
+                }
                 var paciente = app.OpenPatientById(lineaSplit[0]);
                 var curso = paciente.Courses.First(c => c.Id == lineaSplit[3]);
-                var plan = curso.PlanSetups.First(p => p.Id.Contains("TBI Ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
-
+                var plan = curso.PlanSetups.First(p => p.Id.ToLower().Contains("tbi ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
+                if (plan.StructureSet.Structures==null || plan.StructureSet.Structures.Count()==0)
+                {
+                    continue;
+                }
                 //para extraer
                 Paciente pacExtraccion = new Paciente();
                 pacExtraccion.ExtraerPaciente(paciente, curso,(int)plan.UniqueFractionation.NumberOfFractions);
-                salidasGantryExtraccion.Add(pacExtraccion.ToStringGantry());
-                salidasUMExtraccion.Add(pacExtraccion.ToStringUMs());
+                pacientesExtraccion.Add(pacExtraccion);
+                //salidasGantryExtraccion.Add(pacExtraccion.ToStringGantry());
+                //salidasUMExtraccion.Add(pacExtraccion.ToStringUMs());
 
                 //para predecir
                 /*var paciente = app.OpenPatientById("1-111045-0");
                 var curso = paciente.Courses.First(c => c.Id == "C0_Ene25");
-                var plan = curso.PlanSetups.First(p => p.Id.Contains("TBI Ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
+                var plan = curso.PlanSetups.First(p => p.Id.Contains("TBI Ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);*/
                 Paciente pacPredicho = new Paciente();
-                int numFx = (int)plan.UniqueFractionation.NumberOfFractions; //DESPUES PEDIRLO COMO INPUT
-                Paciente pacExtraccion = new Paciente();
-                pacExtraccion.ExtraerPaciente(paciente, curso,numFx);
+                int numFx = (int)plan.UniqueFractionation.NumberOfFractions; //DESPUES PEDIRLO COMO INPUT*/
+                //Paciente pacExtraccion = new Paciente();
+                //pacExtraccion.ExtraerPaciente(paciente, curso,numFx);
 
-                pacExtraccion.EscribirDCM_Ant();
+                //pacExtraccion.EscribirDCM_Ant();
                 pacPredicho.PredecirPaciente(paciente,curso,Modelos,numFx);
-                salidasGantryPrediccion_modelo1.Add(pacPredicho.ToStringGantry());
-                salidasUMPrediccion_modelo1.Add(pacPredicho.ToStringUMs());*/
+                pacientesPrediccion.Add(pacPredicho);
 
+                //salidasGantryPrediccion_modelo1.Add(pacPredicho.ToStringGantry());
+                //salidasUMPrediccion_modelo1.Add(pacPredicho.ToStringUMs());
+                Diferencia diferencia = new Diferencia(pacExtraccion, pacPredicho);
+                diferencias.Add(diferencia.ToString());
                 app.ClosePatient();
                 //}
             }
-            File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\salidaGantryExtraccion.txt", salidasGantryExtraccion);
-            File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\salidaUMExtraccion.txt", salidasUMExtraccion);
+            /*File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\salidaGantryExtraccion.txt", salidasGantryExtraccion);
+            File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\salidaUMExtraccion.txt", salidasUMExtraccion);*/
+            Paciente.EscribirCSVs(pacientesExtraccion);
+            File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\diferencias.txt",diferencias.ToArray());
 
             //para predecir
             /*File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\salidaGantryPrediccion_modelo1.txt", salidasGantryPrediccion_modelo1);
@@ -196,7 +213,7 @@ namespace TBIDyn
 
         /*public static double DiamZOrigin(PlanSetup plan)
         {
-            var body = plan.StructureSet.Structures.First(s => s.Id == "BODY");
+            var body = plan.StructureSet.Structures.First(s => s.Id.ToUpper() == "BODY");
             var cortes = plan.StructureSet.Image.Series.Images.Count() - 1;
             VVector userOrgin = plan.StructureSet.Image.UserOrigin;
             for (int i = 0; i < cortes; i++)
@@ -346,12 +363,12 @@ namespace TBIDyn
                 VVector userOrigin = planAnt.StructureSet.Image.UserOrigin;
                 PlanSetup planPost = curso.PlanSetups.First(p => p.Id.Contains("TBI Post") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
 
-                feature.Vol_body = planAnt.StructureSet.Structures.First(s => s.Id == "BODY").Volume;
+                feature.Vol_body = planAnt.StructureSet.Structures.First(s => s.Id.ToUpper() == "BODY").Volume;
                 if (planAnt.StructureSet.Structures.Any(s => s.Id == "Lungs"))
                 {
                     feature.Vol_lungs = planAnt.StructureSet.Structures.First(s => s.Id == "Lungs").Volume;
                 }
-                feature.Diam_en_origen = DiamZOrigin(planAnt);
+                feature.Diam_origen = DiamZOrigin(planAnt);
                 var c = planAnt.Course;
                 var pat = c.Patient.Id;
                 var ss = planAnt.StructureSet;

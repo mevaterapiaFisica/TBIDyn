@@ -19,13 +19,22 @@ namespace TBIDyn
         {
             string jsonPathUMs = @"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\trained_models_ums.json";
             string jsonPathGantrys = @"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\trained_models_gantrys.json";
+            string jsonPathWeights = @"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\trained_models_weight.json";
             var modelos = JsonConvert.DeserializeObject<Dictionary<string, Modelo>>(File.ReadAllText(jsonPathUMs));
             var models_gantry = JsonConvert.DeserializeObject<Dictionary<string, Modelo>>(File.ReadAllText(jsonPathGantrys));
+            var models_weight = JsonConvert.DeserializeObject<Dictionary<string, Modelo>>(File.ReadAllText(jsonPathWeights));
             foreach (var modelo_g in models_gantry)
             {
                 if (!modelos.ContainsKey(modelo_g.Key))
                 {
                     modelos.Add(modelo_g.Key, modelo_g.Value);
+                }
+            }
+            foreach (var modelo_w in models_weight)
+            {
+                if (!modelos.ContainsKey(modelo_w.Key))
+                {
+                    modelos.Add(modelo_w.Key, modelo_w.Value);
                 }
             }
             return modelos;

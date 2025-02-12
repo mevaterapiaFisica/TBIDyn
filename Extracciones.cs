@@ -55,7 +55,7 @@ namespace TBIDyn
 
         public static List<Tuple<double, double>> Diametros50Central(StructureSet ss)
         {
-            var body = ss.Structures.First(s => s.Id == "BODY");
+            var body = ss.Structures.First(s => s.Id.ToUpper() == "BODY");
             var cortes = ss.Image.Series.Images.Count() - 1;
             VVector userOrigin = ss.Image.UserOrigin;
             var limitesPulmon = InicioFinLungs(ss);
@@ -132,7 +132,11 @@ namespace TBIDyn
         }
         public static double DiamZOrigin(StructureSet ss)
         {
-            var body = ss.Structures.First(s => s.Id == "BODY");
+            if (!ss.Structures.Any(s => s.Id.ToUpper() == "BODY"))
+            {
+                return double.NaN;
+            }
+            var body = ss.Structures.First(s => s.Id.ToUpper() == "BODY");
             var cortes = ss.Image.Series.Images.Count() - 1;
             VVector userOrgin = ss.Image.UserOrigin;
             for (int i = 0; i < cortes; i++)

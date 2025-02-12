@@ -59,7 +59,7 @@ namespace TBIDyn
                 if ((arco.ControlPoints.First().GantryAngle == gantry_inicio || arco.ControlPoints.First().GantryAngle == gantry_fin) && (arco.ControlPoints.Last().GantryAngle == gantry_inicio || arco.ControlPoints.Last().GantryAngle == gantry_fin))
                 {
                     um_por_gray += arco.Meterset.Value;
-                    weight_por_norm += arco.WeightFactor / plan.PlanNormalizationValue; //tengo que dividir por la dosis por fraccion?
+                    weight_por_norm += arco.WeightFactor / plan.PlanNormalizationValue * 40; //normalizo todos a normalizacion 40
                 }
             }
             um_por_gray = um_por_gray / (plan.UniqueFractionation.PrescribedDosePerFraction.Dose / 100);
@@ -113,7 +113,27 @@ namespace TBIDyn
             {
                 Arco arco_ant = arcos[i];
                 Arco arco_post = arcos[i + 4];
-                Arco arco = new Arco((i + 1).ToString(), (arco_ant.gantry_inicio + arco_post.gantry_inicio) / 2, (arco_ant.gantry_fin + arco_post.gantry_fin) / 2, (arco_ant.um_por_gray + arco_post.um_por_gray) / 2,(arco_ant.weight_por_norm + arco_post.weight_por_norm)/2,arco_ant.normalizacion);
+                if (arco_post.nombre == null)
+                {
+                    arco_post.gantry_fin = arco_ant.gantry_fin;
+                    arco_post.gantry_inicio = arco_ant.gantry_inicio;
+                    arco_post.long_arco = arco_ant.long_arco;
+                    arco_post.um_por_gray = arco_ant.um_por_gray;
+                    arco_post.ums_por_gray_grado = arco_ant.ums_por_gray_grado;
+                    arco_post.weight_por_norm = arco_ant.weight_por_norm;
+                }
+                else if (arco_ant.nombre == null)
+                {
+
+                    arco_ant.gantry_fin = arco_post.gantry_fin;
+                    arco_ant.gantry_inicio = arco_post.gantry_inicio;
+                    arco_ant.long_arco = arco_post.long_arco;
+                    arco_ant.um_por_gray = arco_post.um_por_gray;
+                    arco_ant.ums_por_gray_grado = arco_post.ums_por_gray_grado;
+                    arco_ant.weight_por_norm = arco_post.weight_por_norm;
+
+                }
+                Arco arco = new Arco((i + 1).ToString(), (arco_ant.gantry_inicio + arco_post.gantry_inicio) / 2, (arco_ant.gantry_fin + arco_post.gantry_fin) / 2, (arco_ant.um_por_gray + arco_post.um_por_gray) / 2, (arco_ant.weight_por_norm + arco_post.weight_por_norm) / 2, arco_ant.normalizacion);
                 arcosUnificados.Add(arco);
             }
 
