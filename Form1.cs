@@ -77,7 +77,7 @@ namespace TBIDyn
                 var curso = paciente.Courses.First(c => c.Id == "C0_Ene25");
                 var plan = curso.PlanSetups.First(p => p.Id.Contains("TBI Ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);*/
                 Paciente pacPredicho = new Paciente();
-                int numFx = (int)plan.UniqueFractionation.NumberOfFractions; //DESPUES PEDIRLO COMO INPUT*/
+                int numFx = (int)plan.UniqueFractionation.NumberOfFractions; //DESPUES PEDIRLO COMO INPUT
                 //Paciente pacExtraccion = new Paciente();
                 //pacExtraccion.ExtraerPaciente(paciente, curso,numFx);
 
