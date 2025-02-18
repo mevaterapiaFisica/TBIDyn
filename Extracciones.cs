@@ -147,7 +147,10 @@ namespace TBIDyn
                     VVector[] curva = corte.OrderBy(c => c.Length).Last();
                     if (Math.Round(curva.First().z, 1) == Math.Round(userOrgin.z, 1))
                     {
-                        return Math.Abs(curva.OrderBy(c => c.y).First().y - curva.OrderBy(c => c.y).Last().y); //No es exacto pero es lo más simple
+                        //double opc1 = Math.Abs(curva.OrderBy(c => c.y).First().y - curva.OrderBy(c => c.y).Last().y); //No es exacto pero es lo más simple
+                        //double opc2 = Math.Abs(curva.OrderBy(c => c.y).First().y - userOrgin.y) * 2;
+                        //return Math.Abs(curva.OrderBy(c => c.y).First().y - curva.OrderBy(c => c.y).Last().y); //No es exacto pero es lo más simple
+                        return Math.Abs(curva.OrderBy(c => c.y).First().y - userOrgin.y) * 2;
                     }
                 }
             }

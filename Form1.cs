@@ -66,9 +66,9 @@ namespace TBIDyn
                     continue;
                 }
                 //para extraer
-                Paciente pacExtraccion = new Paciente();
+                /*Paciente pacExtraccion = new Paciente();
                 pacExtraccion.ExtraerPaciente(paciente, curso,(int)plan.UniqueFractionation.NumberOfFractions);
-                pacientesExtraccion.Add(pacExtraccion);
+                pacientesExtraccion.Add(pacExtraccion);*/
                 //salidasGantryExtraccion.Add(pacExtraccion.ToStringGantry());
                 //salidasUMExtraccion.Add(pacExtraccion.ToStringUMs());
 
@@ -85,10 +85,12 @@ namespace TBIDyn
                 pacPredicho.PredecirPaciente(paciente,curso,Modelos,numFx);
                 pacientesPrediccion.Add(pacPredicho);
 
+                pacPredicho.EscribirDCM(false);
+                pacPredicho.EscribirDCM(true);
                 //salidasGantryPrediccion_modelo1.Add(pacPredicho.ToStringGantry());
                 //salidasUMPrediccion_modelo1.Add(pacPredicho.ToStringUMs());
-                Diferencia diferencia = new Diferencia(pacExtraccion, pacPredicho);
-                diferencias.Add(diferencia.ToString());
+                /*Diferencia diferencia = new Diferencia(pacExtraccion, pacPredicho);
+                diferencias.Add(diferencia.ToString());*/
                 app.ClosePatient();
                 //}
             }

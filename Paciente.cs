@@ -26,6 +26,8 @@ namespace TBIDyn
         public string Serie_UID { get; set; }
         public string StructureSet_UID { get; set; }
 
+        public VVector UserOrigin { get; set; }
+
         public double DosisTotal { get; set; } //dosis en Gy
         public double DosisFraccion { get; set; } //dosis en Gy
         public int NumFraciones { get; set; }
@@ -87,6 +89,7 @@ namespace TBIDyn
         public double um_por_gray_grado_3 { get; set; }
         public double um_por_gray_grado_4 { get; set; }
 
+        public List<string> textoPesos { get; set; }
 
         public string ToStringRegion1()
         {
@@ -199,7 +202,8 @@ namespace TBIDyn
 
         public void ExtraerAnatomia(StructureSet ss, Patient paciente, double zRodilla)
         {
-            VVector userOrigin = ss.Image.UserOrigin;
+            this.UserOrigin = ss.Image.UserOrigin;
+
             if (!ss.Structures.Any(s => s.Id.ToUpper() == "BODY"))
             {
                 return;
@@ -214,8 +218,8 @@ namespace TBIDyn
             var pulmones = Extracciones.InicioFinLungs(ss);
             z_cabeza = diametros.Last().Item2;
             z_pies = diametros.First().Item2;
-            z_lung_inf = pulmones.Item1 - userOrigin.z;
-            z_lung_sup = pulmones.Item2 - userOrigin.z;
+            z_lung_inf = pulmones.Item1 - UserOrigin.z;
+            z_lung_sup = pulmones.Item2 - UserOrigin.z;
             z_rodilla = -zRodilla;// - userOrigin.z;
 
             List<List<double>> diametrosZonas = new List<List<double>>
@@ -268,10 +272,18 @@ namespace TBIDyn
             um_por_gray_4 = PredecirValor(modelos, "um_por_gray_4");
             um_por_gray_1 = PredecirValor(modelos, "um_por_gray_1");
 
+            um_por_gray_grado_3 = um_por_gray_3 / long_arco_3;
+            um_por_gray_grado_2 = um_por_gray_2 / long_arco_2;
+            um_por_gray_grado_4 = um_por_gray_4 / long_arco_4;
+            um_por_gray_grado_1 = um_por_gray_1 / long_arco_1;
+
+
             weight_por_norm_3 = PredecirValor(modelos, "weight_por_norm_3");
             weight_por_norm_2 = PredecirValor(modelos, "weight_por_norm_2");
             weight_por_norm_4 = PredecirValor(modelos, "weight_por_norm_4");
             weight_por_norm_1 = PredecirValor(modelos, "weight_por_norm_1");
+
+            textoPesos = new List<string>();
         }
 
         public void ExtraerFeatures(Course curso)
@@ -321,7 +333,7 @@ namespace TBIDyn
             }
         }
 
-        public void EscribirDCM_Ant()
+        public void EscribirDCM(bool esPos)
         {
             DicomFile dicomFile = DicomFile.Open(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\TBI Ant.dcm");
             DicomDataset dataset = dicomFile.Dataset;
@@ -333,7 +345,15 @@ namespace TBIDyn
             dataset.AddOrUpdate(DicomTag.StudyInstanceUID, this.Study_UID);
             dataset.AddOrUpdate(DicomTag.FrameOfReferenceUID, this.FOR_UID);
             dataset.AddOrUpdate(DicomTag.ApprovalStatus, "UNAPPROVED");
-            dataset.AddOrUpdate(DicomTag.RTPlanLabel, "TBI Ant_mod");
+            if (esPos)
+            {
+                dataset.AddOrUpdate(DicomTag.RTPlanLabel, "TBI Pos_mod");
+            }
+            else
+            {
+                dataset.AddOrUpdate(DicomTag.RTPlanLabel, "TBI Ant_mod");
+            }
+            
             //var ExtendedInterface = ;
 
             //dataset.Remove(DicomTag.Parse("3253,1000"));
@@ -357,6 +377,9 @@ namespace TBIDyn
             DicomSequence beamSequence = dataset.GetSequence(DicomTag.BeamSequence);
             DicomSequence fractionGroupSequence = dataset.GetSequence(DicomTag.FractionGroupSequence);
             fractionGroupSequence.First().AddOrUpdate(DicomTag.NumberOfFractionsPlanned, this.NumFraciones);
+            //fractionGroupSequence.First().AddOrUpdate(DicomTag.TotalPrescriptionDose, this.DosisTotal);
+            //fractionGroupSequence.First().AddOrUpdate(DicomTag.TotalPrescriptionDose, this.DosisTotal);
+
             fractionGroupSequence.First().AddOrUpdate(DicomTag.NumberOfBeams, TotalDeArcos());
 
             DicomSequence referencedBeamSequence = fractionGroupSequence.First().GetSequence(DicomTag.ReferencedBeamSequence);
@@ -370,17 +393,30 @@ namespace TBIDyn
 
             DicomDataset referencedBeamModelo = referencedBeamSequence.First().Clone();
             referencedBeamSequence.Items.Clear();
+            decimal[] iso = new decimal[3];
+            iso[0] = Convert.ToDecimal(this.UserOrigin.x);
+            iso[1] = Convert.ToDecimal(UserOrigin.y-1224); //después corregir especifico Eq1
+            iso[2] = Convert.ToDecimal(this.UserOrigin.z);
 
+            List<string> pesos = new List<string>();
             for (int i = 1; i < 5; i++)
             {
                 for (int j = 1; j < NumArcos(i) + 1; j++)
                 {
-                    beamSequence.Items.Add(ArcoADDCM(i, j, beamModelo, false)); //para Anterior;
-                    referencedBeamSequence.Items.Add(ReferenceBeam(i, j, false, referencedBeamModelo));
-                    patientSetupSequence.Items.Add(PatientSetup(i, j, false, patientSetupModelo));
+                    beamSequence.Items.Add(ArcoADDCM(NumArcos(i),i, j, beamModelo, esPos,iso)); //para Anterior;
+                    referencedBeamSequence.Items.Add(ReferenceBeam(i, j, esPos, referencedBeamModelo));
+                    patientSetupSequence.Items.Add(PatientSetup(i, j, esPos, patientSetupModelo));
                 }
             }
-            dicomFile.Save(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\Import\TBI Ant_mod.dcm");
+            if (esPos)
+            {
+                dicomFile.Save(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\Import\TBI Pos_mod.dcm");
+            }
+            else
+            {
+                dicomFile.Save(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\Import\TBI Ant_mod.dcm");
+            }
+            File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\Import\pesos.txt", textoPesos.ToArray());
         }
 
         public int SubArcoNumero(int arco, int subarco)
@@ -425,15 +461,16 @@ namespace TBIDyn
                 {
                     um_por_gray_grado = this.um_por_gray_grado_4;
                 }
-                return Convert.ToInt32(Math.Ceiling(um_por_gray_grado / 4 * DosisFraccion / 20));
+                return Convert.ToInt32(Math.Ceiling(um_por_gray_grado * DosisFraccion / 20));
             }
         }
 
-        public DicomDataset ArcoADDCM(int arco, int subarco, DicomDataset beamModelo, bool esPos)
+        public DicomDataset ArcoADDCM(int cantSubarcos, int arco, int subarco, DicomDataset beamModelo, bool esPos, decimal[] iso)
         {
             double gantry_inicio;
             double gantry_fin;
             double UM_total;
+            double weight;
             string prefijo = "ant";
             if (esPos)
             {
@@ -445,18 +482,21 @@ namespace TBIDyn
             {
                 gantry_inicio = gantry_pies;
                 gantry_fin = gantry_rodilla;
+                weight = weight_por_norm_1 / cantSubarcos;
                 UM_total = um_por_gray_1 * DosisFraccion;
             }
             else if (arco == 2)
             {
                 gantry_inicio = gantry_rodilla;
                 gantry_fin = gantry_lung_inf;
+                weight = weight_por_norm_2 / cantSubarcos;
                 UM_total = um_por_gray_2 * DosisFraccion;
             }
             else if (arco == 3)
             {
                 gantry_inicio = gantry_lung_inf;
                 gantry_fin = gantry_lung_sup;
+                weight = weight_por_norm_3 / cantSubarcos;
                 UM_total = um_por_gray_3 * DosisFraccion;
                 dose_rate = 100;
             }
@@ -464,6 +504,7 @@ namespace TBIDyn
             {
                 gantry_inicio = gantry_lung_sup;
                 gantry_fin = gantry_cabeza;
+                weight = weight_por_norm_4 / cantSubarcos;
                 UM_total = um_por_gray_4 * DosisFraccion;
             }
             DicomDataset nuevoArco = beamModelo.Clone();
@@ -472,9 +513,10 @@ namespace TBIDyn
             var primerControlPoint = nuevoArco.GetSequence(DicomTag.ControlPointSequence).First();
             var segundoControlPoint = nuevoArco.GetSequence(DicomTag.ControlPointSequence).Last();
             primerControlPoint.AddOrUpdate(DicomTag.DoseRateSet, dose_rate);
-            if (subarco % 2 != 0) //es inpar
+            if (subarco % 2 != 0) //es impar
             {
                 primerControlPoint.AddOrUpdate(DicomTag.GantryAngle, gantry_inicio);
+                primerControlPoint.AddOrUpdate(DicomTag.IsocenterPosition, iso);
                 primerControlPoint.AddOrUpdate(DicomTag.GantryRotationDirection, "CW");
                 segundoControlPoint.AddOrUpdate(DicomTag.GantryAngle, gantry_fin);
             }
@@ -484,8 +526,8 @@ namespace TBIDyn
                 primerControlPoint.AddOrUpdate(DicomTag.GantryRotationDirection, "CC");
                 segundoControlPoint.AddOrUpdate(DicomTag.GantryAngle, gantry_inicio);
             }
-            //FALTA AGREGAR ISOCENTRO!!!!!!!!!!!!!!!
             nuevoArco.Remove(DicomTag.ReferencedReferenceImageSequence);
+            textoPesos.Add(nombreCampo + @"\t" + weight.ToString());
             return nuevoArco;
         }
 
