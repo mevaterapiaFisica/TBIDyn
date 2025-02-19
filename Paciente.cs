@@ -187,7 +187,7 @@ namespace TBIDyn
             //Serie_UID = ss.Image.Series.UID;
             Study_UID = ss.Image.Series.Study.UID;
             FOR_UID = ss.Image.FOR;
-            DosisFraccion = dosisGy;
+            DosisFraccion = dosisGy/numFx;
             NumFraciones = numFx;
 
         }
@@ -395,7 +395,11 @@ namespace TBIDyn
             referencedBeamSequence.Items.Clear();
             decimal[] iso = new decimal[3];
             iso[0] = Convert.ToDecimal(this.UserOrigin.x);
-            iso[1] = Convert.ToDecimal(UserOrigin.y-1224); //después corregir especifico Eq1
+            iso[1] = Convert.ToDecimal(this.UserOrigin.y + Diam_origen/2-1224); //después corregir especifico Eq1
+            if (esPos)//no me queda claro por qué pero debe ser cuando le cambio la posicion del paciente
+            {
+                iso[1] = -iso[1];
+            }
             iso[2] = Convert.ToDecimal(this.UserOrigin.z);
 
             List<string> pesos = new List<string>();
@@ -443,7 +447,7 @@ namespace TBIDyn
         {
             if (arco == 3)
             {
-                double velocidad = LongitudArco(this.gantry_lung_inf, this.gantry_lung_sup) / (um_por_gray_3 / 4 * DosisFraccion);
+                double velocidad = LongitudArco(this.gantry_lung_inf, this.gantry_lung_sup) / (um_por_gray_3 * DosisFraccion);
                 return Convert.ToInt32(Math.Ceiling(0.3 / velocidad));
             }
             else
@@ -523,11 +527,12 @@ namespace TBIDyn
             else
             {
                 primerControlPoint.AddOrUpdate(DicomTag.GantryAngle, gantry_fin);
+				primerControlPoint.AddOrUpdate(DicomTag.IsocenterPosition, iso);
                 primerControlPoint.AddOrUpdate(DicomTag.GantryRotationDirection, "CC");
                 segundoControlPoint.AddOrUpdate(DicomTag.GantryAngle, gantry_inicio);
             }
             nuevoArco.Remove(DicomTag.ReferencedReferenceImageSequence);
-            textoPesos.Add(nombreCampo + @"\t" + weight.ToString());
+            textoPesos.Add(nombreCampo + "\t" + weight.ToString());
             return nuevoArco;
         }
 
