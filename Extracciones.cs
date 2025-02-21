@@ -168,7 +168,7 @@ namespace TBIDyn
                 VVector userOrgin = plan.StructureSet.Image.UserOrigin;
                 double angGantry = 360 - plan.Beams.Where(b => b.Id.Contains("ant1")).First().ControlPoints.Select(c => c.GantryAngle).Max();
                 double angGantryRad = (angGantry - 11.31) * Math.PI / 180; //11.31 es el angulo del hemicampo
-                return Math.Tan(angGantryRad) * (1224 - diamZorigin / 2);
+                return -Math.Tan(angGantryRad) * (1224 - diamZorigin / 2);
             }
             return double.NaN;
         }

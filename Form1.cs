@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.IO;
 using System.Collections.Generic;
@@ -9,8 +10,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using FellowOakDicom.IO;
-using FellowOakDicom;
+using Dicom.IO;
+using Dicom;
 using VMS.TPS.Common.Model.API;
 using VMS.TPS.Common.Model.Types;
 using VMS.TPS.Common.VolumeModel;
@@ -23,15 +24,63 @@ namespace TBIDyn
     {
         public static string planTBI = @"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\TBI Ant.dcm";
         public static string planMLC = @"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\TBI_MLC.dcm";
+        ScriptContext context;
+        Dictionary<string, Modelo> Modelos;
 
+        public Form1(ScriptContext _context = null)
+        {
+            InitializeComponent();
+            context = _context;
+            Modelos = Modelo.InicializarModelos();
+        }
 
+        private void BT_Calcular_Click(object sender, EventArgs e)
+        {
+            int numFx = Convert.ToInt32(TB_NumFx.Text);
+            double dosisDia = Convert.ToDouble(TB_DosisDia.Text);
+            double zRodilla = Convert.ToDouble(TB_zRodilla.Text) * 10; //paso a mm
+            if (context == null)
+            {
+                VMS.TPS.Common.Model.API.Application app = VMS.TPS.Common.Model.API.Application.CreateApplication("paberbuj", "123qwe");
+                var fid = File.ReadAllLines(@"\\ariamevadb-svr\va_data$\PlanHelper\Busquedas\TBI_feb25.txt");
+                var lineaSplit = fid[4].Split(';');
+                /*var pat = app.OpenPatientById(lineaSplit[0]);
+                var curso = pat.Courses.First(c => c.Id == lineaSplit[3]);
+                var plan = curso.PlanSetups.First(p => p.Id.ToLower().Contains("tbi ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);*/
+                var pat = app.OpenPatientById("1-99531-0");
+                var curso = pat.Courses.First(c => c.Id == "C0_Oct22");
+                Paciente pacienteNC = new Paciente();
+                pacienteNC.ExtraerDatos(pat, curso, numFx);
+                pacienteNC.ExtraerAnatomia(pat, curso);
+                pacienteNC.LlenarPredicciones(Modelos);
+                pacienteNC.EscribirDCM(false);
+                pacienteNC.EscribirDCM(true);
+                MessageBox.Show("Listo");
 
-        public Form1()
+            }
+            else
+            {
+                Paciente paciente = new Paciente();
+                paciente.ExtraerDatos(context, numFx, dosisDia);
+                paciente.ExtraerAnatomia(context, zRodilla);
+                paciente.LlenarPredicciones(Modelos);
+                paciente.EscribirDCM(false);
+                paciente.EscribirDCM(true);
+                MessageBox.Show("Listo");
+            }
+        }
+
+        private void BT_Cancelar_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
+        public void CosasViejas()
         {
             /*string jsonPath = @"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\trained_models_ums.json";
-            string jsonPath2 = @"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\trained_models_gantrys.json";
-            var models = JsonConvert.DeserializeObject<Dictionary<string, Modelo>>(File.ReadAllText(jsonPath));
-            var models2 = JsonConvert.DeserializeObject<Dictionary<string, Modelo>>(File.ReadAllText(jsonPath2));*/
+string jsonPath2 = @"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\trained_models_gantrys.json";
+var models = JsonConvert.DeserializeObject<Dictionary<string, Modelo>>(File.ReadAllText(jsonPath));
+var models2 = JsonConvert.DeserializeObject<Dictionary<string, Modelo>>(File.ReadAllText(jsonPath2));*/
 
 
             VMS.TPS.Common.Model.API.Application app = VMS.TPS.Common.Model.API.Application.CreateApplication("paberbuj", "123qwe");
@@ -50,18 +99,18 @@ namespace TBIDyn
             List<Paciente> pacientesExtraccion = new List<Paciente>();
             List<Paciente> pacientesPrediccion = new List<Paciente>();
             var fid = File.ReadAllLines(@"\\ariamevadb-svr\va_data$\PlanHelper\Busquedas\TBI_feb25.txt");
-            foreach (var linea in fid.Skip(1))
+            foreach (var linea in fid.Skip(2))
             {
 
                 var lineaSplit = linea.Split(';');
-                if (lineaSplit[0]== "1-107350-0")
+                if (lineaSplit[0] == "1-107350-0")
                 {
                     continue;
                 }
                 var paciente = app.OpenPatientById(lineaSplit[0]);
                 var curso = paciente.Courses.First(c => c.Id == lineaSplit[3]);
                 var plan = curso.PlanSetups.First(p => p.Id.ToLower().Contains("tbi ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
-                if (plan.StructureSet.Structures==null || plan.StructureSet.Structures.Count()==0)
+                if (plan.StructureSet.Structures == null || plan.StructureSet.Structures.Count() == 0)
                 {
                     continue;
                 }
@@ -82,7 +131,7 @@ namespace TBIDyn
                 //pacExtraccion.ExtraerPaciente(paciente, curso,numFx);
 
                 //pacExtraccion.EscribirDCM_Ant();
-                pacPredicho.PredecirPaciente(paciente,curso,Modelos,numFx);
+                pacPredicho.PredecirPaciente(paciente, curso, Modelos, numFx);
                 pacientesPrediccion.Add(pacPredicho);
 
                 pacPredicho.EscribirDCM(false);
@@ -97,69 +146,67 @@ namespace TBIDyn
             /*File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\salidaGantryExtraccion.txt", salidasGantryExtraccion);
             File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\salidaUMExtraccion.txt", salidasUMExtraccion);*/
             Paciente.EscribirCSVs(pacientesExtraccion);
-            File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\diferencias.txt",diferencias.ToArray());
+            File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\diferencias.txt", diferencias.ToArray());
 
             //para predecir
             /*File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\salidaGantryPrediccion_modelo1.txt", salidasGantryPrediccion_modelo1);
             File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\salidaUMPrediccion_modelo1.txt", salidasUMPrediccion_modelo1);*/
-            InitializeComponent();
+
         }
 
+        /* public static List<string> Perfiles(PlanSetup plan)
+         {
+             var body = plan.StructureSet.Structures.First(s => s.Id.ToUpper() == "BODY");
+             var cortes = plan.StructureSet.Image.Series.Images.Count() - 1;
+             VVector userOrgin = plan.StructureSet.Image.UserOrigin;
+             //List<VVector[][]> lista = new List<VVector[][]>();
+             List<string> export = new List<string>();
+             for (int i = 0; i < cortes; i++)
+             {
+                 var corte = body.GetContoursOnImagePlane(i);
+                 //  lista.Add(corte);
+
+                 if (corte.Length > 0)
+                 {
+                     VVector[] curva = corte.OrderBy(c => c.Length).Last();
+                     //List<VVector> cruces = curva.Where(p => p.x*curva.prev).ToList();
+                     string linea = "";
+                     List<double> Ys = new List<double>();
+                     for (int j = 1; j < curva.Length; j++)
+                     {
+                         if ((curva[j].x - userOrgin.x) * (curva[j - 1].x - userOrgin.x) < 0)
+                         {
+                             Ys.Add(curva[j].y);
+                             if (linea == "")
+                             {
+                                 linea += curva[j].z.ToString();
+                             }
+                         }
+                     }
+                     foreach (var y in Ys.OrderBy(y => y))
+                     {
+                         linea += ";" + y.ToString();
+                     }
+
+                     if (linea != "")
+                     {
+                         export.Add(linea);
+                     }
 
 
-       /* public static List<string> Perfiles(PlanSetup plan)
-        {
-            var body = plan.StructureSet.Structures.First(s => s.Id.ToUpper() == "BODY");
-            var cortes = plan.StructureSet.Image.Series.Images.Count() - 1;
-            VVector userOrgin = plan.StructureSet.Image.UserOrigin;
-            //List<VVector[][]> lista = new List<VVector[][]>();
-            List<string> export = new List<string>();
-            for (int i = 0; i < cortes; i++)
-            {
-                var corte = body.GetContoursOnImagePlane(i);
-                //  lista.Add(corte);
+                     /*if (i==170)
+                     {
+                         foreach (VVector vector in corte.First())
+                         {
+                             export.Add(vector.x + ";" + vector.y + ";" + vector.z);
+                         }
 
-                if (corte.Length > 0)
-                {
-                    VVector[] curva = corte.OrderBy(c => c.Length).Last();
-                    //List<VVector> cruces = curva.Where(p => p.x*curva.prev).ToList();
-                    string linea = "";
-                    List<double> Ys = new List<double>();
-                    for (int j = 1; j < curva.Length; j++)
-                    {
-                        if ((curva[j].x - userOrgin.x) * (curva[j - 1].x - userOrgin.x) < 0)
-                        {
-                            Ys.Add(curva[j].y);
-                            if (linea == "")
-                            {
-                                linea += curva[j].z.ToString();
-                            }
-                        }
-                    }
-                    foreach (var y in Ys.OrderBy(y => y))
-                    {
-                        linea += ";" + y.ToString();
-                    }
+                     }
 
-                    if (linea != "")
-                    {
-                        export.Add(linea);
-                    }
-
-
-                    /*if (i==170)
-                    {
-                        foreach (VVector vector in corte.First())
-                        {
-                            export.Add(vector.x + ";" + vector.y + ";" + vector.z);
-                        }
-
-                    }
-
-                }
-            }
-            return export;
-        }*/
+                 }
+             }
+             return export;
+         }*/
 
         /*public static Tuple<double, double> InicioFinLungs(PlanSetup plan)
         {
@@ -411,7 +458,7 @@ namespace TBIDyn
                 return null;
             }
         }*/
-        
+
         /*public static MetricasRegion MetricasDeLista(List<double> datos)
         {
             MetricasRegion metricas = new MetricasRegion();
@@ -487,7 +534,7 @@ namespace TBIDyn
             double promedioInf = centroInferior.Average(c => c.y);
             return new Tuple<double, double>(promedioSup, promedioInf);
         }*/
-        
+
         public static void DcmTBIDin()
         {
             //var file = DicomFile.Open(planTBI);
@@ -542,6 +589,8 @@ namespace TBIDyn
             //Beam1.AddOrUpdate(DicomTag.NumberOfControlPoints, cpSequence.Count());
             file.Save(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\out.dcm");
         }
+
+
     }
-    
+
 }

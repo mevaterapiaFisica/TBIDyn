@@ -9,8 +9,8 @@ using VMS.TPS.Common.Model.API;
 using VMS.TPS.Common.Model.Types;
 using VMS.TPS.Common.VolumeModel;
 using System.Windows.Forms;
-using FellowOakDicom.IO;
-using FellowOakDicom;
+using Dicom.IO;
+using Dicom;
 
 namespace TBIDyn
 {
@@ -184,7 +184,7 @@ namespace TBIDyn
             //var plan = curso.PlanSetups.First(p => p.Id.Contains("TBI Ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
             StructureSet_UID = ss.UID;
             Serie_UID = plan.SeriesUID;
-            //Serie_UID = ss.Image.Series.UID;
+            Serie_UID = ss.Image.Series.UID;
             Study_UID = ss.Image.Series.Study.UID;
             FOR_UID = ss.Image.FOR;
             DosisFraccion = dosisGy/numFx;
@@ -198,6 +198,28 @@ namespace TBIDyn
             StructureSet ss = plan.StructureSet;
             double Dosis = plan.TotalPrescribedDose.Dose / 100;
             ExtraerDatos(ss, paciente, Dosis, curso, numFx);
+        }
+
+        public void ExtraerDatos(ScriptContext context, int numFx, double DosisDia)
+        {
+            StructureSet ss = context.StructureSet;
+            Patient paciente = context.Patient;
+            ID = paciente.Id;
+            Apellido = paciente.LastName;
+            Nombre = paciente.FirstName;
+            StructureSet_UID = ss.UID;
+            //Serie_UID = context.Image.Series.UID;
+            Study_UID = ss.Image.Series.Study.UID;
+            FOR_UID = ss.Image.FOR;
+            DosisFraccion = DosisDia;
+            NumFraciones = numFx;
+        }
+
+        public void ExtraerAnatomia(ScriptContext context, double zRodilla)
+        {
+            StructureSet ss = context.StructureSet;
+            Patient paciente = context.Patient;
+            ExtraerAnatomia(ss, paciente, zRodilla);
         }
 
         public void ExtraerAnatomia(StructureSet ss, Patient paciente, double zRodilla)
@@ -220,7 +242,7 @@ namespace TBIDyn
             z_pies = diametros.First().Item2;
             z_lung_inf = pulmones.Item1 - UserOrigin.z;
             z_lung_sup = pulmones.Item2 - UserOrigin.z;
-            z_rodilla = -zRodilla;// - userOrigin.z;
+            z_rodilla = zRodilla;// - userOrigin.z;
 
             List<List<double>> diametrosZonas = new List<List<double>>
             {
@@ -341,7 +363,7 @@ namespace TBIDyn
             dataset.AddOrUpdate(DicomTag.PatientName, this.Apellido.ToUpper() + "^" + this.Nombre.ToUpper());
             dataset.AddOrUpdate(DicomTag.PatientID, this.ID);
             dataset.AddOrUpdate(DicomTag.StudyInstanceUID, this.Study_UID);
-            dataset.AddOrUpdate(DicomTag.SeriesInstanceUID, this.Serie_UID);
+            //dataset.AddOrUpdate(DicomTag.SeriesInstanceUID, this.Serie_UID);
             dataset.AddOrUpdate(DicomTag.StudyInstanceUID, this.Study_UID);
             dataset.AddOrUpdate(DicomTag.FrameOfReferenceUID, this.FOR_UID);
             dataset.AddOrUpdate(DicomTag.ApprovalStatus, "UNAPPROVED");
@@ -394,13 +416,13 @@ namespace TBIDyn
             DicomDataset referencedBeamModelo = referencedBeamSequence.First().Clone();
             referencedBeamSequence.Items.Clear();
             decimal[] iso = new decimal[3];
-            iso[0] = Convert.ToDecimal(this.UserOrigin.x);
-            iso[1] = Convert.ToDecimal(this.UserOrigin.y + Diam_origen/2-1224); //después corregir especifico Eq1
+            iso[0] = Math.Round(Convert.ToDecimal(this.UserOrigin.x),3);
+            iso[1] = Math.Round(Convert.ToDecimal(this.UserOrigin.y + Diam_origen/2-1224),3); //después corregir especifico Eq1
             if (esPos)//no me queda claro por qué pero debe ser cuando le cambio la posicion del paciente
             {
                 iso[1] = -iso[1];
             }
-            iso[2] = Convert.ToDecimal(this.UserOrigin.z);
+            iso[2] = Math.Round(Convert.ToDecimal(this.UserOrigin.z),3);
 
             List<string> pesos = new List<string>();
             for (int i = 1; i < 5; i++)
@@ -420,7 +442,7 @@ namespace TBIDyn
             {
                 dicomFile.Save(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\Import\TBI Ant_mod.dcm");
             }
-            File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\Import\pesos.txt", textoPesos.ToArray());
+            File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\Import\pesos_ant.txt", textoPesos.ToArray());
         }
 
         public int SubArcoNumero(int arco, int subarco)
