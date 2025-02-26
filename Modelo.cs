@@ -17,9 +17,9 @@ namespace TBIDyn
 
         public static Dictionary<string,Modelo> InicializarModelos()
         {
-            string jsonPathUMs = @"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\trained_models_ums.json";
-            string jsonPathGantrys = @"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\trained_models_gantrys.json";
-            string jsonPathWeights = @"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\trained_models_weight.json";
+            string jsonPathUMs = @"\\ARIAMEVADB-SVR\va_data$\AutoPlan TBI\Insumos\trained_models_ums.json";
+            string jsonPathGantrys = @"\\ARIAMEVADB-SVR\va_data$\AutoPlan TBI\Insumos\trained_models_gantrys.json";
+            string jsonPathWeights = @"\\ARIAMEVADB-SVR\va_data$\AutoPlan TBI\Insumos\trained_models_weight.json";
             var modelos = JsonConvert.DeserializeObject<Dictionary<string, Modelo>>(File.ReadAllText(jsonPathUMs));
             var models_gantry = JsonConvert.DeserializeObject<Dictionary<string, Modelo>>(File.ReadAllText(jsonPathGantrys));
             var models_weight = JsonConvert.DeserializeObject<Dictionary<string, Modelo>>(File.ReadAllText(jsonPathWeights));

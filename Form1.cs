@@ -22,7 +22,7 @@ namespace TBIDyn
 {
     public partial class Form1 : Form
     {
-        public static string planTBI = @"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\TBI Ant.dcm";
+        public static string planTBI = @"\\ARIAMEVADB-SVR\va_data$\AutoPlan TBI\Insumos\TBI_modelo.dcm";
         public static string planMLC = @"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\TBI_MLC.dcm";
         ScriptContext context;
         Dictionary<string, Modelo> Modelos;
@@ -64,8 +64,8 @@ namespace TBIDyn
                 paciente.ExtraerDatos(context, numFx, dosisDia);
                 paciente.ExtraerAnatomia(context, zRodilla);
                 paciente.LlenarPredicciones(Modelos);
-                paciente.EscribirDCM(false);
-                paciente.EscribirDCM(true);
+                paciente.EscribirDCM();
+                //paciente.EscribirDCM(true);
                 MessageBox.Show("Se generaron el dcm del plan anterior y el archivo de pesos");
 
             }
