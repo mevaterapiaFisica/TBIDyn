@@ -44,9 +44,9 @@ namespace TBIDyn
             this.label1.AutoSize = true;
             this.label1.Location = new System.Drawing.Point(24, 34);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(115, 13);
+            this.label1.Size = new System.Drawing.Size(121, 13);
             this.label1.TabIndex = 0;
-            this.label1.Text = "Dosis día por plan [Gy]";
+            this.label1.Text = "Dosis día por plan [cGy]";
             // 
             // TB_DosisDia
             // 
@@ -60,7 +60,7 @@ namespace TBIDyn
             this.BT_Calcular.Location = new System.Drawing.Point(148, 140);
             this.BT_Calcular.Name = "BT_Calcular";
             this.BT_Calcular.Size = new System.Drawing.Size(75, 23);
-            this.BT_Calcular.TabIndex = 2;
+            this.BT_Calcular.TabIndex = 4;
             this.BT_Calcular.Text = "Calcular";
             this.BT_Calcular.UseVisualStyleBackColor = true;
             this.BT_Calcular.Click += new System.EventHandler(this.BT_Calcular_Click);
@@ -70,7 +70,7 @@ namespace TBIDyn
             this.TB_NumFx.Location = new System.Drawing.Point(148, 66);
             this.TB_NumFx.Name = "TB_NumFx";
             this.TB_NumFx.Size = new System.Drawing.Size(100, 20);
-            this.TB_NumFx.TabIndex = 4;
+            this.TB_NumFx.TabIndex = 2;
             // 
             // label2
             // 
@@ -87,7 +87,7 @@ namespace TBIDyn
             this.TB_zRodilla.Location = new System.Drawing.Point(148, 97);
             this.TB_zRodilla.Name = "TB_zRodilla";
             this.TB_zRodilla.Size = new System.Drawing.Size(100, 20);
-            this.TB_zRodilla.TabIndex = 6;
+            this.TB_zRodilla.TabIndex = 3;
             // 
             // label3
             // 

@@ -37,7 +37,7 @@ namespace TBIDyn
         private void BT_Calcular_Click(object sender, EventArgs e)
         {
             int numFx = Convert.ToInt32(TB_NumFx.Text);
-            double dosisDia = Convert.ToDouble(TB_DosisDia.Text);
+            double dosisDia = Convert.ToDouble(TB_DosisDia.Text)/100; //paso a Gy
             double zRodilla = Convert.ToDouble(TB_zRodilla.Text) * 10; //paso a mm
             if (context == null)
             {
@@ -54,7 +54,7 @@ namespace TBIDyn
                 pacienteNC.ExtraerAnatomia(pat, curso);
                 pacienteNC.LlenarPredicciones(Modelos);
                 pacienteNC.EscribirDCM(false);
-                pacienteNC.EscribirDCM(true);
+                //pacienteNC.EscribirDCM(true);
                 MessageBox.Show("Listo");
 
             }
@@ -66,8 +66,10 @@ namespace TBIDyn
                 paciente.LlenarPredicciones(Modelos);
                 paciente.EscribirDCM(false);
                 paciente.EscribirDCM(true);
-                MessageBox.Show("Listo");
+                MessageBox.Show("Se generaron el dcm del plan anterior y el archivo de pesos");
+
             }
+            this.Close();
         }
 
         private void BT_Cancelar_Click(object sender, EventArgs e)

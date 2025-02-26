@@ -22,6 +22,7 @@ namespace TBIDyn
         public string Nombre { get; set; }
 
         public string Study_UID { get; set; }
+        public string Study_ID { get; set; }
         public string FOR_UID { get; set; }
         public string Serie_UID { get; set; }
         public string StructureSet_UID { get; set; }
@@ -209,7 +210,8 @@ namespace TBIDyn
             Nombre = paciente.FirstName;
             StructureSet_UID = ss.UID;
             //Serie_UID = context.Image.Series.UID;
-            Study_UID = ss.Image.Series.Study.UID;
+            Study_UID = context.Image.Series.Study.UID;
+            Study_ID = context.Image.Series.Study.Id;
             FOR_UID = ss.Image.FOR;
             DosisFraccion = DosisDia;
             NumFraciones = numFx;
@@ -355,7 +357,7 @@ namespace TBIDyn
             }
         }
 
-        public void EscribirDCM(bool esPos)
+        public void EscribirDCM(bool esPos=false)
         {
             DicomFile dicomFile = DicomFile.Open(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\TBI Ant.dcm");
             DicomDataset dataset = dicomFile.Dataset;
@@ -363,23 +365,21 @@ namespace TBIDyn
             dataset.AddOrUpdate(DicomTag.PatientName, this.Apellido.ToUpper() + "^" + this.Nombre.ToUpper());
             dataset.AddOrUpdate(DicomTag.PatientID, this.ID);
             dataset.AddOrUpdate(DicomTag.StudyInstanceUID, this.Study_UID);
-            //dataset.AddOrUpdate(DicomTag.SeriesInstanceUID, this.Serie_UID);
+            dataset.AddOrUpdate(DicomTag.SeriesInstanceUID, this.Serie_UID + new Random().Next().ToString());
             dataset.AddOrUpdate(DicomTag.StudyInstanceUID, this.Study_UID);
+            dataset.AddOrUpdate(DicomTag.StudyID, this.Study_ID);
             dataset.AddOrUpdate(DicomTag.FrameOfReferenceUID, this.FOR_UID);
             dataset.AddOrUpdate(DicomTag.ApprovalStatus, "UNAPPROVED");
-            if (esPos)
+            /*if (esPos)
             {
                 dataset.AddOrUpdate(DicomTag.RTPlanLabel, "TBI Pos_mod");
             }
             else
             {
                 dataset.AddOrUpdate(DicomTag.RTPlanLabel, "TBI Ant_mod");
-            }
-            
-            //var ExtendedInterface = ;
-
-            //dataset.Remove(DicomTag.Parse("3253,1000"));
-
+            }*/
+            dataset.AddOrUpdate(DicomTag.RTPlanLabel, "TBI Ant_mod");
+           
             dataset.Remove(new DicomTag(12883, 4096, "Varian Medical Systems VISION 3253"));
             dataset.Remove(new DicomTag(12883, 4097, "Varian Medical Systems VISION 3253"));
             dataset.Remove(new DicomTag(12883, 4098, "Varian Medical Systems VISION 3253"));
@@ -387,8 +387,6 @@ namespace TBIDyn
             dataset.Remove(new DicomTag(12935, 0016));
             dataset.Remove(new DicomTag(12935, 0017));
             dataset.Remove(new DicomTag(12883, 0016));
-            //var dt = new DicomTag(12883, 0016, "Varian Medical Systems VISION 3253");
-            //dataset.AddOrUpdate(DicomTag.StructurSetRe, this.Study_UID);
             DicomSequence structureSetReference = dataset.GetSequence(DicomTag.ReferencedStructureSetSequence);
             structureSetReference.First().AddOrUpdate(DicomTag.ReferencedSOPInstanceUID, this.StructureSet_UID);
             DicomSequence doseReferenceSequence = dataset.GetSequence(DicomTag.DoseReferenceSequence);
@@ -417,11 +415,11 @@ namespace TBIDyn
             referencedBeamSequence.Items.Clear();
             decimal[] iso = new decimal[3];
             iso[0] = Math.Round(Convert.ToDecimal(this.UserOrigin.x),3);
-            iso[1] = Math.Round(Convert.ToDecimal(this.UserOrigin.y + Diam_origen/2-1224),3); //después corregir especifico Eq1
-            if (esPos)//no me queda claro por qué pero debe ser cuando le cambio la posicion del paciente
+            iso[1] = Math.Round(Convert.ToDecimal(this.UserOrigin.y + Diam_origen/2-1224),3); //después corregir especifico Eq1 y corregir para post que lo hace al reves
+            /*if (esPos)//no me queda claro por qué pero debe ser cuando le cambio la posicion del paciente
             {
-                iso[1] = -iso[1];
-            }
+                iso[1] = -iso[1]; //acá es la reves
+            }*/
             iso[2] = Math.Round(Convert.ToDecimal(this.UserOrigin.z),3);
 
             List<string> pesos = new List<string>();
@@ -434,15 +432,16 @@ namespace TBIDyn
                     patientSetupSequence.Items.Add(PatientSetup(i, j, esPos, patientSetupModelo));
                 }
             }
-            if (esPos)
+            /*if (esPos)
             {
-                dicomFile.Save(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\Import\TBI Pos_mod.dcm");
+                dicomFile.Save(@"\\ARIAMEVADB-SVR\va_data$\Pacientes\TBI\AutoPlan Import\TBI Pos_mod.dcm");
             }
             else
             {
-                dicomFile.Save(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\Import\TBI Ant_mod.dcm");
-            }
-            File.WriteAllLines(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\Import\pesos_ant.txt", textoPesos.ToArray());
+                dicomFile.Save(@"\\ARIAMEVADB-SVR\va_data$\Pacientes\TBI\AutoPlan Import\" + this.Apellido.ToUpper() + ", " + this.Nombre.ToUpper() + " - " + this.ID +  "TBI Ant_mod.dcm");
+            }*/
+            dicomFile.Save(@"\\ARIAMEVADB-SVR\va_data$\Pacientes\TBI\AutoPlan Import\" + this.Apellido.ToUpper() + ", " + this.Nombre.ToUpper() + " - " + this.ID + "TBI Ant_mod.dcm");
+            File.WriteAllLines(@"\\ARIAMEVADB-SVR\va_data$\Pacientes\TBI\AutoPlan Import\" + this.Apellido.ToUpper() + ", " + this.Nombre.ToUpper() + " - " + this.ID + "pesos.txt", textoPesos.ToArray());
         }
 
         public int SubArcoNumero(int arco, int subarco)
@@ -541,20 +540,20 @@ namespace TBIDyn
             primerControlPoint.AddOrUpdate(DicomTag.DoseRateSet, dose_rate);
             if (subarco % 2 != 0) //es impar
             {
-                primerControlPoint.AddOrUpdate(DicomTag.GantryAngle, gantry_inicio);
+                primerControlPoint.AddOrUpdate(DicomTag.GantryAngle, Math.Round(gantry_inicio,0));
                 primerControlPoint.AddOrUpdate(DicomTag.IsocenterPosition, iso);
                 primerControlPoint.AddOrUpdate(DicomTag.GantryRotationDirection, "CW");
-                segundoControlPoint.AddOrUpdate(DicomTag.GantryAngle, gantry_fin);
+                segundoControlPoint.AddOrUpdate(DicomTag.GantryAngle, Math.Round(gantry_fin,0));
             }
             else
             {
-                primerControlPoint.AddOrUpdate(DicomTag.GantryAngle, gantry_fin);
+                primerControlPoint.AddOrUpdate(DicomTag.GantryAngle, Math.Round(gantry_fin,0));
 				primerControlPoint.AddOrUpdate(DicomTag.IsocenterPosition, iso);
                 primerControlPoint.AddOrUpdate(DicomTag.GantryRotationDirection, "CC");
-                segundoControlPoint.AddOrUpdate(DicomTag.GantryAngle, gantry_inicio);
+                segundoControlPoint.AddOrUpdate(DicomTag.GantryAngle, Math.Round(gantry_inicio,0));
             }
             nuevoArco.Remove(DicomTag.ReferencedReferenceImageSequence);
-            textoPesos.Add(nombreCampo + "\t" + weight.ToString());
+            textoPesos.Add(nombreCampo + "\t" + Math.Round(weight,3).ToString());
             return nuevoArco;
         }
 
