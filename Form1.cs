@@ -14,7 +14,7 @@ using Dicom.IO;
 using Dicom;
 using VMS.TPS.Common.Model.API;
 using VMS.TPS.Common.Model.Types;
-using VMS.TPS.Common.VolumeModel;
+//using VMS.TPS.Common.VolumeModel;
 using Newtonsoft.Json;
 //using
 
@@ -32,6 +32,7 @@ namespace TBIDyn
             InitializeComponent();
             context = _context;
             Modelos = Modelo.InicializarModelos();
+            Minar();
         }
 
         private void BT_Calcular_Click(object sender, EventArgs e)
@@ -65,8 +66,9 @@ namespace TBIDyn
                 paciente.ExtraerAnatomia(context, zRodilla);
                 paciente.LlenarPredicciones(Modelos);
                 paciente.EscribirDCM();
-                //paciente.EscribirDCM(true);
-                MessageBox.Show("Se generaron el dcm del plan anterior y el archivo de pesos");
+                paciente.EscribirDCM(true);
+                Clipboard.SetText(@"\\ARIAMEVADB-SVR\va_data$\Pacientes\TBI\AutoPlan Import\");
+                MessageBox.Show("Se generaron los archivos dcm de ambos planes\nSe copió en el portapapeles la ruta de importación\nRecuerde calcular el plan suma con Shift+F5");
 
             }
             this.Close();
@@ -77,7 +79,40 @@ namespace TBIDyn
             this.Close();
         }
 
-        public void CosasViejas()
+        public static void Minar()
+        {
+            VMS.TPS.Common.Model.API.Application app = VMS.TPS.Common.Model.API.Application.CreateApplication("paberbuj", "123qwe");
+            List<Paciente> pacientesExtraccion = new List<Paciente>();
+            List<string> salidasGantryExtraccion = new List<string>();
+            List<string> salidasUMExtraccion = new List<string>();
+            List<string> salidasWeightExtraccion = new List<string>();
+            var fid = File.ReadAllLines(@"\\ariamevadb-svr\va_data$\PlanHelper\Busquedas\TBI_feb25.txt");
+            foreach (var linea in fid.Skip(2))
+            {
+                var lineaSplit = linea.Split(';');
+                if (lineaSplit[0] == "1-107350-0")
+                {
+                    continue;
+                }
+                var paciente = app.OpenPatientById(lineaSplit[0]);
+                var curso = paciente.Courses.First(c => c.Id == lineaSplit[3]);
+                var plan = curso.PlanSetups.First(p => p.Id.ToLower().Contains("tbi ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
+                if (plan.StructureSet.Structures == null || plan.StructureSet.Structures.Count() == 0)
+                {
+                    continue;
+                }
+                //para extraer
+                Paciente pacExtraccion = new Paciente();
+                pacExtraccion.ExtraerPaciente(paciente, curso,(int)plan.UniqueFractionation.NumberOfFractions);
+                pacientesExtraccion.Add(pacExtraccion);
+                app.ClosePatient();
+            }
+            Paciente.EscribirCSVs(pacientesExtraccion);
+        }
+
+
+
+            public void CosasViejas()
         {
             /*string jsonPath = @"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\trained_models_ums.json";
 string jsonPath2 = @"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\trained_models_gantrys.json";

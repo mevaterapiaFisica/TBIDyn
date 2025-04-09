@@ -191,6 +191,7 @@ namespace TBIDyn
         public double sd { get; set; }
         public double perc80 { get; set; }
         public double perc20 { get; set; }
+        public double asim { get; set; }
 
         public override string ToString()
         {

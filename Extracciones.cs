@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using VMS.TPS.Common.Model.API;
 using VMS.TPS.Common.Model.Types;
-using VMS.TPS.Common.VolumeModel;
+//using VMS.TPS.Common.VolumeModel;
 
 
 namespace TBIDyn
@@ -26,7 +26,7 @@ namespace TBIDyn
             return Hu2Densidad.CalcularWEDLinea(lineaCT, CurvaHU);
         }
 
-        private static Tuple<double, double> diametros50Curva(VVector[] curva, VVector userOrigin, Image ct, List<Hu2Densidad.PuntoCurva> CurvaHU)
+        private static Tuple<double, double,double> diametros50Curva(VVector[] curva, VVector userOrigin, Image ct, List<Hu2Densidad.PuntoCurva> CurvaHU)
         {
             double xmin = curva.OrderBy(c => c.x).First().x;
             double xmax = curva.OrderBy(c => c.x).Last().x;
@@ -34,33 +34,39 @@ namespace TBIDyn
             double centroMenos50 = xmin + longitud / 4;
             double centroMas50 = xmin + 3 * longitud / 4;
 
-
             VVector[] curvaR = curva.Where(c => c.x > centroMenos50 && c.x < centroMas50).Select(c => new VVector(Math.Round(c.x, 2), Math.Round(c.y, 2), c.z)).ToArray();
+
+            /*if (curvaR.Count() > 50)
+            {
+
+            }*/
 
             var agrupados = curvaR.GroupBy(c => c.x).Distinct().ToList();
             List<double> listDiams = new List<double>();
+            List<double> listAsim = new List<double>();
             foreach (var agrupado in agrupados)
             {
                 if (agrupado.Count() == 2)
                 {
                     listDiams.Add(WED(agrupado.ElementAt(0), agrupado.ElementAt(1), ct, CurvaHU));
+                    listAsim.Add((agrupado.Select(a => a.y).Average() - userOrigin.y));
                 }
             }
             if (listDiams.Count > 0)
             {
-                return new Tuple<double, double>(Math.Round(listDiams.Average(), 3), Math.Round(curva.First().z - userOrigin.z, 1));
+                return new Tuple<double, double,double>(Math.Round(listDiams.Average(), 3), Math.Round(curva.First().z - userOrigin.z, 1), Math.Round(listDiams.Average(), 3));
             }
-            return new Tuple<double, double>(double.NaN, double.NaN);
+            return new Tuple<double, double, double>(double.NaN, double.NaN,double.NaN);
         }
 
-        public static List<Tuple<double, double>> Diametros50Central(StructureSet ss)
+        public static List<Tuple<double, double,double>> Diametros50Central(StructureSet ss)
         {
             var body = ss.Structures.First(s => s.Id.ToUpper() == "BODY");
             var cortes = ss.Image.Series.Images.Count() - 1;
             VVector userOrigin = ss.Image.UserOrigin;
             var limitesPulmon = InicioFinLungs(ss);
             var CurvaHU = Hu2Densidad.CurvaHU();
-            List<Tuple<double, double>> diametros50 = new List<Tuple<double, double>>();
+            List<Tuple<double, double,double>> diametros50 = new List<Tuple<double, double,double>>();
 
             for (int i = 0; i < cortes; i++)
             {
@@ -75,13 +81,15 @@ namespace TBIDyn
                     else
                     {
                         List<double> diamsCorte = new List<double>();
+                        List<double> asimCorte = new List<double>();
                         for (int j = 0; j < corte.Length; j++)
                         {
                             var curvaN = corte[j];
                             var diam = diametros50Curva(curvaN, userOrigin, ss.Image, CurvaHU);
                             diamsCorte.Add(diam.Item1);
+                            asimCorte.Add(diam.Item3);
                         }
-                        diametros50.Add(new Tuple<double, double>(Math.Round(diamsCorte.Average(), 3), Math.Round(curva.First().z - userOrigin.z, 0)));
+                        diametros50.Add(new Tuple<double, double, double>(Math.Round(diamsCorte.Average(), 3), Math.Round(curva.First().z - userOrigin.z, 0),Math.Round(asimCorte.Average(),3)));
                     }
                 }
             }
@@ -179,22 +187,24 @@ namespace TBIDyn
 
         #region metodos auxiliares
 
-        public static MetricasRegion MetricasDeLista(List<double> datos)
+        public static MetricasRegion MetricasDeLista(List<double> diametros,List<double> asimetrias)
         {
             MetricasRegion metricas = new MetricasRegion();
-            if (datos.Count == 0)
+            if (diametros.Count == 0)
             {
                 metricas.media = double.NaN;
                 metricas.perc20 = double.NaN;
                 metricas.perc80 = double.NaN;
                 metricas.sd = double.NaN;
+                metricas.asim = double.NaN;
                 return metricas;
             }
 
-            metricas.media = Math.Round(datos.Average(), 3);
-            metricas.sd = Math.Round(CalcularDesviacionEstandar(datos, metricas.media), 3);
-            metricas.perc20 = Math.Round(CalcularPercentil(datos, 20), 3);
-            metricas.perc80 = Math.Round(CalcularPercentil(datos, 80), 3);
+            metricas.asim = Math.Round(asimetrias.Average(), 3);
+            metricas.media = Math.Round(diametros.Average(), 3);
+            metricas.sd = Math.Round(CalcularDesviacionEstandar(diametros, metricas.media), 3);
+            metricas.perc20 = Math.Round(CalcularPercentil(diametros, 20), 3);
+            metricas.perc80 = Math.Round(CalcularPercentil(diametros, 80), 3);
 
             if (metricas.media == double.NaN)
             {

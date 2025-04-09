@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using VMS.TPS.Common.Model.API;
 using VMS.TPS.Common.Model.Types;
-using VMS.TPS.Common.VolumeModel;
+//using VMS.TPS.Common.VolumeModel;
 
 namespace TBIDyn
 {
@@ -16,6 +16,7 @@ namespace TBIDyn
         public double gantry_fin;
         public double long_arco;
         public double um_por_gray;
+        public double asim_um_por_gray;
         public double ums_por_gray_grado;
         public double weight_por_norm;
         public double normalizacion;

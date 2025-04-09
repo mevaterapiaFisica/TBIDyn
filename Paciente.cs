@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using VMS.TPS.Common.Model.API;
 using VMS.TPS.Common.Model.Types;
-using VMS.TPS.Common.VolumeModel;
+//using VMS.TPS.Common.VolumeModel;
 using System.Windows.Forms;
 using Dicom.IO;
 using Dicom;
@@ -47,21 +47,25 @@ namespace TBIDyn
         public double sd_1 { get; set; }
         public double perc80_1 { get; set; }
         public double perc20_1 { get; set; }
+        public double asim_1 { get; set; }
 
         public double med_2 { get; set; }
         public double sd_2 { get; set; }
         public double perc80_2 { get; set; }
         public double perc20_2 { get; set; }
+        public double asim_2 { get; set; }
 
         public double med_3 { get; set; }
         public double sd_3 { get; set; }
         public double perc80_3 { get; set; }
         public double perc20_3 { get; set; }
+        public double asim_3 { get; set; }
 
         public double med_4 { get; set; }
         public double sd_4 { get; set; }
         public double perc80_4 { get; set; }
         public double perc20_4 { get; set; }
+        public double asim_4 { get; set; }
 
         //LlenarPredicciones o ExtraerFeatures
         public double gantry_pies { get; set; }
@@ -85,6 +89,12 @@ namespace TBIDyn
         public double um_por_gray_3 { get; set; }
         public double um_por_gray_4 { get; set; }
 
+        public double asim_um_por_gray_1 { get; set; }
+        public double asim_um_por_gray_2 { get; set; }
+        public double asim_um_por_gray_3 { get; set; }
+        public double asim_um_por_gray_4 { get; set; }
+
+
         public double um_por_gray_grado_1 { get; set; }
         public double um_por_gray_grado_2 { get; set; }
         public double um_por_gray_grado_3 { get; set; }
@@ -94,20 +104,20 @@ namespace TBIDyn
 
         public string ToStringRegion1()
         {
-            return med_1.ToString() + "," + sd_1.ToString() + "," + perc80_1.ToString() + "," + perc20_1.ToString();
+            return med_1.ToString() + "," + sd_1.ToString() + "," + perc80_1.ToString() + "," + perc20_1.ToString() + asim_1.ToString();
         }
 
         public string ToStringRegion2()
         {
-            return med_2.ToString() + "," + sd_2.ToString() + "," + perc80_2.ToString() + "," + perc20_2.ToString();
+            return med_2.ToString() + "," + sd_2.ToString() + "," + perc80_2.ToString() + "," + perc20_2.ToString() + asim_2.ToString();
         }
         public string ToStringRegion3()
         {
-            return med_3.ToString() + "," + sd_3.ToString() + "," + perc80_3.ToString() + "," + perc20_3.ToString();
+            return med_3.ToString() + "," + sd_3.ToString() + "," + perc80_3.ToString() + "," + perc20_3.ToString() + asim_3.ToString();
         }
         public string ToStringRegion4()
         {
-            return med_4.ToString() + "," + sd_4.ToString() + "," + perc80_4.ToString() + "," + perc20_4.ToString();
+            return med_4.ToString() + "," + sd_4.ToString() + "," + perc80_4.ToString() + "," + perc20_4.ToString() + asim_4.ToString();
         }
 
 
@@ -146,6 +156,7 @@ namespace TBIDyn
             GetType().GetProperty($"sd_{indice + 1}").SetValue(this, metricaRegion.sd);
             GetType().GetProperty($"perc80_{indice + 1}").SetValue(this, metricaRegion.perc80);
             GetType().GetProperty($"perc20_{indice + 1}").SetValue(this, metricaRegion.perc20);
+            GetType().GetProperty($"asim_{indice + 1}").SetValue(this, metricaRegion.asim);
         }
 
         public void AsignarParametrosArco(int indice, Arco arco)
@@ -253,10 +264,17 @@ namespace TBIDyn
                 diametros.Where(d => d.Item2 > z_lung_inf && d.Item2 < z_lung_sup).Select(d => d.Item1).ToList(),
                 diametros.Where(d => d.Item2 > z_lung_sup).Select(d => d.Item1).ToList()
             };
+            List<List<double>> asimZonas = new List<List<double>>
+            {
+                diametros.Where(d => d.Item2 < z_rodilla).Select(d => d.Item3).ToList(),
+                diametros.Where(d => d.Item2 > z_rodilla && d.Item2 < z_lung_inf).Select(d => d.Item3).ToList(),
+                diametros.Where(d => d.Item2 > z_lung_inf && d.Item2 < z_lung_sup).Select(d => d.Item3).ToList(),
+                diametros.Where(d => d.Item2 > z_lung_sup).Select(d => d.Item3).ToList()
+            };
 
             for (int i = 0; i < 4; i++)
             {
-                AsignarMetricas(i, Extracciones.MetricasDeLista(diametrosZonas[i]));
+                AsignarMetricas(i, Extracciones.MetricasDeLista(diametrosZonas[i],asimZonas[i]));
             }
         }
 
@@ -359,7 +377,7 @@ namespace TBIDyn
 
         public void EscribirDCM(bool esPos=false)
         {
-            DicomFile dicomFile = DicomFile.Open(@"\\fisica0\centro_de_datos2018\101_Cosas de\PABLO\TBI Dyn\TBI Ant.dcm");
+            DicomFile dicomFile = DicomFile.Open(@"\\ARIAMEVADB-SVR\va_data$\AutoPlan TBI\Insumos\TBI_modelo.dcm");
             DicomDataset dataset = dicomFile.Dataset;
             dataset.AddOrUpdate(DicomTag.SOPInstanceUID, dataset.GetSingleValue<string>(DicomTag.SOPInstanceUID) + new Random().Next().ToString());
             dataset.AddOrUpdate(DicomTag.PatientName, this.Apellido.ToUpper() + "^" + this.Nombre.ToUpper());
@@ -370,15 +388,15 @@ namespace TBIDyn
             dataset.AddOrUpdate(DicomTag.StudyID, this.Study_ID);
             dataset.AddOrUpdate(DicomTag.FrameOfReferenceUID, this.FOR_UID);
             dataset.AddOrUpdate(DicomTag.ApprovalStatus, "UNAPPROVED");
-            /*if (esPos)
+            if (esPos)
             {
                 dataset.AddOrUpdate(DicomTag.RTPlanLabel, "TBI Pos_mod");
             }
             else
             {
                 dataset.AddOrUpdate(DicomTag.RTPlanLabel, "TBI Ant_mod");
-            }*/
-            dataset.AddOrUpdate(DicomTag.RTPlanLabel, "TBI Ant_mod");
+            }
+            //dataset.AddOrUpdate(DicomTag.RTPlanLabel, "TBI Ant_mod");
            
             dataset.Remove(new DicomTag(12883, 4096, "Varian Medical Systems VISION 3253"));
             dataset.Remove(new DicomTag(12883, 4097, "Varian Medical Systems VISION 3253"));
@@ -432,16 +450,16 @@ namespace TBIDyn
                     patientSetupSequence.Items.Add(PatientSetup(i, j, esPos, patientSetupModelo));
                 }
             }
-            /*if (esPos)
+            if (esPos)
             {
-                dicomFile.Save(@"\\ARIAMEVADB-SVR\va_data$\Pacientes\TBI\AutoPlan Import\TBI Pos_mod.dcm");
+                dicomFile.Save(@"\\ARIAMEVADB-SVR\va_data$\Pacientes\TBI\AutoPlan Import\" + this.Apellido.ToUpper() + ", " + this.Nombre.ToUpper() + " - " + this.ID + "TBI Pos_mod.dcm");
             }
             else
             {
                 dicomFile.Save(@"\\ARIAMEVADB-SVR\va_data$\Pacientes\TBI\AutoPlan Import\" + this.Apellido.ToUpper() + ", " + this.Nombre.ToUpper() + " - " + this.ID +  "TBI Ant_mod.dcm");
-            }*/
-            dicomFile.Save(@"\\ARIAMEVADB-SVR\va_data$\Pacientes\TBI\AutoPlan Import\" + this.Apellido.ToUpper() + ", " + this.Nombre.ToUpper() + " - " + this.ID + "TBI Ant_mod.dcm");
-            File.WriteAllLines(@"\\ARIAMEVADB-SVR\va_data$\Pacientes\TBI\AutoPlan Import\" + this.Apellido.ToUpper() + ", " + this.Nombre.ToUpper() + " - " + this.ID + "pesos.txt", textoPesos.ToArray());
+            }
+            dicomFile.Save(@"\\ARIAMEVADB-SVR\va_data$\Pacientes\TBI\AutoPlan Import\" + this.Apellido.ToUpper() + ", " + this.Nombre.ToUpper() + " - " + this.ID + "_TBI Ant_mod.dcm");
+            File.WriteAllLines(@"\\ARIAMEVADB-SVR\va_data$\Pacientes\TBI\AutoPlan Import\" + this.Apellido.ToUpper() + ", " + this.Nombre.ToUpper() + " - " + this.ID + "_pesos.txt", textoPesos.ToArray());
         }
 
         public int SubArcoNumero(int arco, int subarco)
@@ -603,38 +621,38 @@ namespace TBIDyn
 
         public static string EtiquetasUMArco3()
         {
-            return "ID,Vol_body,Vol_lungs,Diam_origen,med_3,sd_3,perc80_3,perc20_3,long_arco_3,um_por_gray_3,ums_por_gray_grado_3";
+            return "ID,Vol_body,Vol_lungs,Diam_origen,med_3,sd_3,perc80_3,perc20_3,asim_3,long_arco_3,um_por_gray_3,ums_por_gray_grado_3";
         }
 
         public static string EtiquetasUMArco2()
         {
-            return "ID,Vol_body,Vol_lungs,Diam_origen,med_2,sd_2,perc80_2,perc20_2,med_3,sd_3,perc80_3,perc20_3,um_por_gray_3,long_arco_2,um_por_gray_2,ums_por_gray_grado_2";
+            return "ID,Vol_body,Vol_lungs,Diam_origen,med_2,sd_2,perc80_2,perc20_2,asim_2,med_3,sd_3,perc80_3,perc20_3,asim_3,um_por_gray_3,long_arco_2,um_por_gray_2,ums_por_gray_grado_2";
         }
         public static string EtiquetasUMArco4()
         {
-            return "ID,Vol_body,Vol_lungs,Diam_origen,med_4,sd_4,perc80_4,perc20_4,med_3,sd_3,perc80_3,perc20_3,um_por_gray_3,z_cabeza,um_por_gray_4,ums_por_gray_grado_4";
+            return "ID,Vol_body,Vol_lungs,Diam_origen,med_4,sd_4,perc80_4,perc20_4,asim_4,med_3,sd_3,perc80_3,perc20_3,asim_3,um_por_gray_3,z_cabeza,um_por_gray_4,ums_por_gray_grado_4";
         }
         public static string EtiquetasUMArco1()
         {
-            return "ID,Vol_body,Vol_lungs,Diam_origen,med_1,sd_1,perc80_1,perc20_1,med_2,sd_2,perc80_2,perc20_2,um_por_gray_2,z_pies,um_por_gray_1,ums_por_gray_grado_1";
+            return "ID,Vol_body,Vol_lungs,Diam_origen,med_1,sd_1,perc80_1,perc20_1,asim_1,med_2,sd_2,perc80_2,perc20_2,asim_2,um_por_gray_2,z_pies,um_por_gray_1,ums_por_gray_grado_1";
         }
 
         public static string EtiquetasWeightArco3()
         {
-            return "ID,Vol_body,Vol_lungs,Diam_origen,med_3,sd_3,perc80_3,perc20_3,long_arco_3,weight_por_norm_3";
+            return "ID,Vol_body,Vol_lungs,Diam_origen,med_3,sd_3,perc80_3,perc20_3,asim_3,long_arco_3,weight_por_norm_3";
         }
 
         public static string EtiquetasWeightArco2()
         {
-            return "ID,Vol_body,Vol_lungs,Diam_origen,med_2,sd_2,perc80_2,perc20_2,med_3,sd_3,perc80_3,perc20_3,weight_por_norm_3,long_arco_2,weight_por_norm_2";
+            return "ID,Vol_body,Vol_lungs,Diam_origen,med_2,sd_2,perc80_2,perc20_2,asim_2,med_3,sd_3,perc80_3,perc20_3,asim_3,weight_por_norm_3,long_arco_2,weight_por_norm_2";
         }
         public static string EtiquetasWeightArco4()
         {
-            return "ID,Vol_body,Vol_lungs,Diam_origen,med_4,sd_4,perc80_4,perc20_4,med_3,sd_3,perc80_3,perc20_3,weight_por_norm_3,z_cabeza,weight_por_norm_4";
+            return "ID,Vol_body,Vol_lungs,Diam_origen,med_4,sd_4,perc80_4,perc20_4,asim_4,med_3,sd_3,perc80_3,perc20_3,asim_3,weight_por_norm_3,z_cabeza,weight_por_norm_4";
         }
         public static string EtiquetasWeightArco1()
         {
-            return "ID,Vol_body,Vol_lungs,Diam_origen,med_1,sd_1,perc80_1,perc20_1,med_2,sd_2,perc80_2,perc20_2,weight_por_norm_2,z_pies,weight_por_norm_1";
+            return "ID,Vol_body,Vol_lungs,Diam_origen,med_1,sd_1,perc80_1,perc20_1,asim_1,med_2,sd_2,perc80_2,perc20_2,asim_2,weight_por_norm_2,z_pies,weight_por_norm_1";
         }
 
         public string ToStringUMArco3()
