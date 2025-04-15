@@ -225,6 +225,7 @@ namespace TBIDyn
             z_pies = diametros.First().Item2;
             z_lung_inf = pulmones.Item1 - UserOrigin.z;
             z_lung_sup = pulmones.Item2 - UserOrigin.z;
+            var zrodillaOpti = zRodillaOptimo(diametros.Where(d => d.Item2 < z_lung_inf).ToList());
             z_rodilla = zRodilla;// - userOrigin.z;
 
             List<List<double>> diametrosZonas = new List<List<double>>
@@ -247,6 +248,34 @@ namespace TBIDyn
                 AsignarMetricas(i, Extracciones.MetricasDeLista(diametrosZonas[i],asimZonas[i]));
             }
         }
+
+        public double zRodillaOptimo(List<Tuple<double,double,double>> diametros)
+        {
+            int mejorIndice = -1;
+            double mejorSumaDesviaciones = double.MaxValue;
+            double pesoPenalidad = 0.1;
+
+            for (int i = 1; i < diametros.Count - 1; i++)
+            {
+                var promedio = diametros.Select(d => d.Item1).ToList().Average();
+                var izquierda = diametros.Select(d => d.Item1).Take(i).ToList();
+                var derecha = diametros.Select(d => d.Item1).Skip(i).ToList();
+                double penalidad = Math.Abs((Convert.ToDouble(izquierda.Count - derecha.Count)) / diametros.Count)*pesoPenalidad;
+
+                double desvIzquierda = Extracciones.CalcularDesviacionEstandar(izquierda,promedio);
+                double desvDerecha = Extracciones.CalcularDesviacionEstandar(derecha, promedio);
+
+                double suma = desvIzquierda + desvDerecha + penalidad;
+
+                if (suma < mejorSumaDesviaciones)
+                {
+                    mejorSumaDesviaciones = suma;
+                    mejorIndice = i;
+                }
+            }
+            return diametros[mejorIndice].Item2;
+        }
+
 
         public void ExtraerAnatomia(Patient paciente, Course curso)
         {

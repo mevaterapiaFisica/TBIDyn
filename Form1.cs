@@ -32,7 +32,10 @@ namespace TBIDyn
             InitializeComponent();
             context = _context;
             Modelos = Modelo.InicializarModelos();
-            Minar();
+            if (context== null)
+            {
+                Minar();
+            }
         }
 
         private void BT_Calcular_Click(object sender, EventArgs e)
@@ -103,6 +106,7 @@ namespace TBIDyn
                 }
                 //para extraer
                 Paciente pacExtraccion = new Paciente();
+                
                 pacExtraccion.ExtraerPaciente(paciente, curso,(int)plan.UniqueFractionation.NumberOfFractions);
                 pacientesExtraccion.Add(pacExtraccion);
                 app.ClosePatient();
