@@ -176,7 +176,25 @@ namespace TBIDyn
                 VVector userOrgin = plan.StructureSet.Image.UserOrigin;
                 double angGantry = 360 - plan.Beams.Where(b => b.Id.Contains("ant1")).First().ControlPoints.Select(c => c.GantryAngle).Max();
                 double angGantryRad = (angGantry - 11.31) * Math.PI / 180; //11.31 es el angulo del hemicampo
-                return -Math.Tan(angGantryRad) * (1224 - diamZorigin / 2);
+                
+                
+                
+
+                double beta = 11.31;//Math.Atan(20 / 100); //angulo hemicampo
+                double alpha = 360 - plan.Beams.Where(b => b.Id.Contains("ant1")).First().ControlPoints.Select(c => c.GantryAngle).Max(); // angulo de gantry 
+                double gamma = alpha - beta;
+                double X = Math.Tan(alpha * Math.PI / 180)*448;
+                double zrodilla2 = Math.Tan(gamma*Math.PI/180)*(1224-diamZorigin/2)- userOrgin.z;
+
+
+                //version chatgpt
+                double d = 1224 - diamZorigin / 2; //Distancia iso camilla - diamZOrigin/2. Distancia iso centro del paciente
+                double f_w = 200 * (1 + d / 1000); // 1000 por la distancia iso. Acá reescalo el tamaño de campo
+                double zrodilla3 = f_w * Math.Cos(alpha * Math.PI / 180) + d * Math.Sin(alpha*Math.PI / 180)-userOrgin.z;
+                string nombre = plan.Course.Patient.LastName + "; " + plan.Course.Patient.FirstName;
+                //return -Math.Tan(angGantryRad) * (1224 - diamZorigin / 2);
+                return zrodilla3;
+
             }
             return double.NaN;
         }

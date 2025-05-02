@@ -98,7 +98,9 @@ namespace TBIDyn
                     continue;
                 }
                 var paciente = app.OpenPatientById(lineaSplit[0]);
-                var curso = paciente.Courses.First(c => c.Id == lineaSplit[3]);
+                //var paciente = app.OpenPatientById("1-112172-0");
+                                var curso = paciente.Courses.First(c => c.Id == lineaSplit[3]);
+                //var curso = paciente.Courses.First();
                 var plan = curso.PlanSetups.First(p => p.Id.ToLower().Contains("tbi ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
                 if (plan.StructureSet.Structures == null || plan.StructureSet.Structures.Count() == 0)
                 {
