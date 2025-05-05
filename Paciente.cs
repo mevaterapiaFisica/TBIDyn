@@ -300,11 +300,16 @@ namespace TBIDyn
             um_por_gray_2 = PredecirValor(modelos, "um_por_gray_2");
             um_por_gray_4 = PredecirValor(modelos, "um_por_gray_4");
             um_por_gray_1 = PredecirValor(modelos, "um_por_gray_1");
-            
-            asim_um_1 = PredecirValor(modelos, "asim_um_1");
-            asim_um_2 = PredecirValor(modelos, "asim_um_2");
-            asim_um_3 = PredecirValor(modelos, "asim_um_3");
-            asim_um_4 = PredecirValor(modelos, "asim_um_4");
+
+            /* asim_um_1 = PredecirValor(modelos, "asim_um_1");
+             asim_um_2 = PredecirValor(modelos, "asim_um_2");
+             asim_um_3 = PredecirValor(modelos, "asim_um_3");
+             asim_um_4 = PredecirValor(modelos, "asim_um_4");*/  // por ahora sigo sin asimetria
+
+            asim_um_1 = 1;
+            asim_um_2 = 1;
+            asim_um_3 = 1;
+            asim_um_4 = 1;
 
             um_por_gray_grado_3 = um_por_gray_3 / long_arco_3;
             um_por_gray_grado_2 = um_por_gray_2 / long_arco_2;
