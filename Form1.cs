@@ -34,7 +34,7 @@ namespace TBIDyn
             Modelos = Modelo.InicializarModelos();
             if (context== null)
             {
-               // Minar();
+                Minar();
             }
         }
 
@@ -78,9 +78,10 @@ namespace TBIDyn
                 Paciente paciente2 = new Paciente();
                 paciente2.ExtraerDatos(context, numFx, dosisDia);
                 paciente2.ExtraerAnatomia(context, paciente2.z_rodilla_opti);
+                paciente2.z_rodilla = paciente2.z_rodilla_opti;
                 paciente2.LlenarPredicciones(Modelos);
-                paciente2.EscribirDCM();
-                paciente2.EscribirDCM(true);
+                paciente2.EscribirDCM(false,"opti");
+                paciente2.EscribirDCM(true, "opti");
                 Clipboard.SetText(@"\\ARIAMEVADB-SVR\va_data$\Pacientes\TBI\AutoPlan Import\");
                 MessageBox.Show("Se generaron los archivos dcm de ambos planes\nSe copió en el portapapeles la ruta de importación\nRecuerde calcular el plan suma con Shift+F5");
 

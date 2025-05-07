@@ -227,6 +227,7 @@ namespace TBIDyn
             z_lung_inf = pulmones.Item1 - UserOrigin.z;
             z_lung_sup = pulmones.Item2 - UserOrigin.z;
             z_rodilla_opti = zRodillaOptimo(diametros.Where(d => d.Item2 < z_lung_inf).ToList());
+            
             z_rodilla = -Math.Abs(zRodilla);// - userOrigin.z;
 
             List<List<double>> diametrosZonas = new List<List<double>>
@@ -287,6 +288,8 @@ namespace TBIDyn
 
         public void LlenarPredicciones(Dictionary<string, Modelo> modelos)
         {
+            MessageBox.Show("rodilla: " + z_rodilla.ToString());
+            MessageBox.Show("opti: " + z_rodilla_opti.ToString());
             gantry_pies = PredecirValor(modelos, "gantry_inicio_1");
             gantry_rodilla = PredecirValor(modelos, "gantry_fin_1", "gantry_inicio_2");
             gantry_lung_inf = PredecirValor(modelos, "gantry_fin_2", "gantry_inicio_3");
@@ -395,13 +398,18 @@ namespace TBIDyn
             dataset.AddOrUpdate(DicomTag.StudyID, this.Study_ID);
             dataset.AddOrUpdate(DicomTag.FrameOfReferenceUID, this.FOR_UID);
             dataset.AddOrUpdate(DicomTag.ApprovalStatus, "UNAPPROVED");
+            string label = "";
+            if (sufijo!=null)
+            {
+                label += "_" + sufijo;
+            }
             if (esPos)
             {
-                dataset.AddOrUpdate(DicomTag.RTPlanLabel, "TBI Pos_mod");
+                dataset.AddOrUpdate(DicomTag.RTPlanLabel, "TBI Pos_mod" + label);
             }
             else
             {
-                dataset.AddOrUpdate(DicomTag.RTPlanLabel, "TBI Ant_mod");
+                dataset.AddOrUpdate(DicomTag.RTPlanLabel, "TBI Ant_mod" + label);
             }
             //dataset.AddOrUpdate(DicomTag.RTPlanLabel, "TBI Ant_mod");
            
@@ -441,10 +449,10 @@ namespace TBIDyn
             decimal[] iso = new decimal[3];
             iso[0] = Math.Round(Convert.ToDecimal(this.UserOrigin.x),3);
             iso[1] = Math.Round(Convert.ToDecimal(this.UserOrigin.y + Diam_origen/2-1224),3); //después corregir especifico Eq1 y corregir para post que lo hace al reves
-            /*if (esPos)//no me queda claro por qué pero debe ser cuando le cambio la posicion del paciente
+            if (esPos)//no me queda claro por qué pero debe ser cuando le cambio la posicion del paciente
             {
                 iso[1] = -iso[1]; //acá es la reves
-            }*/
+            }
             iso[2] = Math.Round(Convert.ToDecimal(this.UserOrigin.z),3);
 
             List<string> pesos = new List<string>();
@@ -458,9 +466,11 @@ namespace TBIDyn
                 }
             }
             string path = @"\\ARIAMEVADB-SVR\va_data$\Pacientes\TBI\AutoPlan Import\" + this.Apellido.ToUpper() + ", " + this.Nombre.ToUpper() + " - " + this.ID + "TBI_";
+            string path_pesos = @"\\ARIAMEVADB-SVR\va_data$\Pacientes\TBI\AutoPlan Import\" + this.Apellido.ToUpper() + ", " + this.Nombre.ToUpper() + " - " + this.ID + "_pesos";
             if (sufijo!=null)
             {
                 path += sufijo + "_";
+                path_pesos += sufijo + "_";
             }
             if (esPos)
             {
@@ -471,7 +481,7 @@ namespace TBIDyn
                 path += "ant_mod.dcm";
             }
             dicomFile.Save(path);
-            File.WriteAllLines(@"\\ARIAMEVADB-SVR\va_data$\Pacientes\TBI\AutoPlan Import\" + this.Apellido.ToUpper() + ", " + this.Nombre.ToUpper() + " - " + this.ID + "_pesos.txt", textoPesos.ToArray());
+            File.WriteAllLines( path_pesos + ".txt", textoPesos.ToArray());
         }
 
         public int SubArcoNumero(int arco, int subarco)
@@ -496,10 +506,11 @@ namespace TBIDyn
 
         public int NumArcos(int arco)
         {
+            string mensaje = "arco ";
             if (arco == 3)
             {
                 double velocidad = LongitudArco(this.gantry_lung_inf, this.gantry_lung_sup) / (um_por_gray_3 * DosisFraccion);
-                //MessageBox.Show("arco 3:  " + Convert.ToInt32(Math.Ceiling(0.3 / velocidad).ToString());
+                mensaje+="3:  " + Convert.ToInt32(Math.Ceiling(0.3 / velocidad).ToString());
                 return Convert.ToInt32(Math.Ceiling(0.3 / velocidad));
             }
             else
@@ -509,17 +520,22 @@ namespace TBIDyn
                 if (arco == 1)
                 {
                     um_por_gray_grado = this.um_por_gray_grado_1;
+                    mensaje += "1";
                     //asim = this.asim_1;
 
                 }
                 else if (arco == 2)
                 {
                     um_por_gray_grado = this.um_por_gray_grado_2;
+                    mensaje += "2";
                 }
                 else
                 {
                     um_por_gray_grado = this.um_por_gray_grado_4;
+                    mensaje += "4";
                 }
+                mensaje += Convert.ToInt32(Math.Ceiling(um_por_gray_grado * DosisFraccion / 20).ToString());
+                //MessageBox.Show(mensaje);
                 return Convert.ToInt32(Math.Ceiling(um_por_gray_grado * DosisFraccion / 20));
             }
         }
@@ -645,8 +661,8 @@ namespace TBIDyn
             {
                 um_asim = um_gray_post(um, asim); //vale lo mismo por gray o totales
             }
-            //return um;
-            return um_asim;
+            return um;
+            //return um_asim;
         }
 
         #endregion
