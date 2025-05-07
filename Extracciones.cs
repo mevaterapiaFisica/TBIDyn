@@ -168,23 +168,21 @@ namespace TBIDyn
         #endregion
 
         #region info de Plan
-        public static double ZRodilla(PlanSetup plan) //No funciona óptimo. Igual los planes no paran en rodilla
+        public static double ZRodilla(PlanSetup plan) 
         {
             if (plan.Beams.Any(b => b.Id.Contains("ant1")))
             {
                 double diamZorigin = DiamZOrigin(plan.StructureSet);
                 VVector userOrgin = plan.StructureSet.Image.UserOrigin;
-                double angGantry = 360 - plan.Beams.Where(b => b.Id.Contains("ant1")).First().ControlPoints.Select(c => c.GantryAngle).Max();
+                double alpha = 360 - plan.Beams.Where(b => b.Id.Contains("ant1")).First().ControlPoints.Select(c => c.GantryAngle).Max(); // angulo de gantry 
+                /*double angGantry = 360 - plan.Beams.Where(b => b.Id.Contains("ant1")).First().ControlPoints.Select(c => c.GantryAngle).Max();
                 double angGantryRad = (angGantry - 11.31) * Math.PI / 180; //11.31 es el angulo del hemicampo
-                
-                
                 
 
                 double beta = 11.31;//Math.Atan(20 / 100); //angulo hemicampo
-                double alpha = 360 - plan.Beams.Where(b => b.Id.Contains("ant1")).First().ControlPoints.Select(c => c.GantryAngle).Max(); // angulo de gantry 
                 double gamma = alpha - beta;
                 double X = Math.Tan(alpha * Math.PI / 180)*448;
-                double zrodilla2 = Math.Tan(gamma*Math.PI/180)*(1224-diamZorigin/2)- userOrgin.z;
+                double zrodilla2 = Math.Tan(gamma*Math.PI/180)*(1224-diamZorigin/2)- userOrgin.z;*/
 
 
                 //version chatgpt

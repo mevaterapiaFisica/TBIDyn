@@ -41,6 +41,7 @@ namespace TBIDyn
         public double z_lung_sup { get; set; }
         public double z_lung_inf { get; set; }
         public double z_rodilla { get; set; }
+        public double z_rodilla_opti { get; set; }
         public double z_pies { get; set; }
 
         public double med_1 { get; set; }
@@ -225,8 +226,8 @@ namespace TBIDyn
             z_pies = diametros.First().Item2;
             z_lung_inf = pulmones.Item1 - UserOrigin.z;
             z_lung_sup = pulmones.Item2 - UserOrigin.z;
-            var zrodillaOpti = zRodillaOptimo(diametros.Where(d => d.Item2 < z_lung_inf).ToList());
-            z_rodilla = zRodilla;// - userOrigin.z;
+            z_rodilla_opti = zRodillaOptimo(diametros.Where(d => d.Item2 < z_lung_inf).ToList());
+            z_rodilla = -Math.Abs(zRodilla);// - userOrigin.z;
 
             List<List<double>> diametrosZonas = new List<List<double>>
             {
@@ -381,7 +382,7 @@ namespace TBIDyn
 
 
         #region dicom
-        public void EscribirDCM(bool esPos=false)
+        public void EscribirDCM(bool esPos=false,string sufijo=null)
         {
             DicomFile dicomFile = DicomFile.Open(@"\\ARIAMEVADB-SVR\va_data$\AutoPlan TBI\Insumos\TBI_modelo.dcm");
             DicomDataset dataset = dicomFile.Dataset;
@@ -456,15 +457,20 @@ namespace TBIDyn
                     patientSetupSequence.Items.Add(PatientSetup(i, j, esPos, patientSetupModelo));
                 }
             }
+            string path = @"\\ARIAMEVADB-SVR\va_data$\Pacientes\TBI\AutoPlan Import\" + this.Apellido.ToUpper() + ", " + this.Nombre.ToUpper() + " - " + this.ID + "TBI_";
+            if (sufijo!=null)
+            {
+                path += sufijo + "_";
+            }
             if (esPos)
             {
-                dicomFile.Save(@"\\ARIAMEVADB-SVR\va_data$\Pacientes\TBI\AutoPlan Import\" + this.Apellido.ToUpper() + ", " + this.Nombre.ToUpper() + " - " + this.ID + "TBI Pos_mod.dcm");
+                path+= "Pos_mod.dcm";
             }
             else
             {
-                dicomFile.Save(@"\\ARIAMEVADB-SVR\va_data$\Pacientes\TBI\AutoPlan Import\" + this.Apellido.ToUpper() + ", " + this.Nombre.ToUpper() + " - " + this.ID +  "TBI Ant_mod.dcm");
+                path += "ant_mod.dcm";
             }
-            dicomFile.Save(@"\\ARIAMEVADB-SVR\va_data$\Pacientes\TBI\AutoPlan Import\" + this.Apellido.ToUpper() + ", " + this.Nombre.ToUpper() + " - " + this.ID + "_TBI Ant_mod.dcm");
+            dicomFile.Save(path);
             File.WriteAllLines(@"\\ARIAMEVADB-SVR\va_data$\Pacientes\TBI\AutoPlan Import\" + this.Apellido.ToUpper() + ", " + this.Nombre.ToUpper() + " - " + this.ID + "_pesos.txt", textoPesos.ToArray());
         }
 
@@ -493,6 +499,7 @@ namespace TBIDyn
             if (arco == 3)
             {
                 double velocidad = LongitudArco(this.gantry_lung_inf, this.gantry_lung_sup) / (um_por_gray_3 * DosisFraccion);
+                //MessageBox.Show("arco 3:  " + Convert.ToInt32(Math.Ceiling(0.3 / velocidad).ToString());
                 return Convert.ToInt32(Math.Ceiling(0.3 / velocidad));
             }
             else

@@ -34,7 +34,7 @@ namespace TBIDyn
             Modelos = Modelo.InicializarModelos();
             if (context== null)
             {
-                Minar();
+               // Minar();
             }
         }
 
@@ -48,14 +48,16 @@ namespace TBIDyn
                 VMS.TPS.Common.Model.API.Application app = VMS.TPS.Common.Model.API.Application.CreateApplication("paberbuj", "123qwe");
                 var fid = File.ReadAllLines(@"\\ariamevadb-svr\va_data$\PlanHelper\Busquedas\TBI_feb25.txt");
                 var lineaSplit = fid[4].Split(';');
-                /*var pat = app.OpenPatientById(lineaSplit[0]);
-                var curso = pat.Courses.First(c => c.Id == lineaSplit[3]);
-                var plan = curso.PlanSetups.First(p => p.Id.ToLower().Contains("tbi ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);*/
-                var pat = app.OpenPatientById("1-99531-0");
-                var curso = pat.Courses.First(c => c.Id == "C0_Oct22");
+                //var pat = app.OpenPatientById(lineaSplit[0]);
+                //var curso = pat.Courses.First(c => c.Id == lineaSplit[3]);
+                
+                var pat = app.OpenPatientById("1-112031-0");
+                var curso = pat.Courses.First(c => c.Id == "C0_Mar25");
+                //var plan = curso.PlanSetups.First(p => p.Id.ToLower().Contains("tbi ant") && p.ApprovalStatus == PlanSetupApprovalStatus.TreatmentApproved);
                 Paciente pacienteNC = new Paciente();
                 pacienteNC.ExtraerDatos(pat, curso, numFx);
                 pacienteNC.ExtraerAnatomia(pat, curso);
+                pacienteNC.z_rodilla = pacienteNC.z_rodilla_opti;
                 pacienteNC.LlenarPredicciones(Modelos);
                 pacienteNC.EscribirDCM(false);
                 //pacienteNC.EscribirDCM(true);
@@ -64,12 +66,21 @@ namespace TBIDyn
             }
             else
             {
+                //rodilla original
                 Paciente paciente = new Paciente();
                 paciente.ExtraerDatos(context, numFx, dosisDia);
                 paciente.ExtraerAnatomia(context, zRodilla);
                 paciente.LlenarPredicciones(Modelos);
                 paciente.EscribirDCM();
                 paciente.EscribirDCM(true);
+
+                //rodilla opti
+                Paciente paciente2 = new Paciente();
+                paciente2.ExtraerDatos(context, numFx, dosisDia);
+                paciente2.ExtraerAnatomia(context, paciente2.z_rodilla_opti);
+                paciente2.LlenarPredicciones(Modelos);
+                paciente2.EscribirDCM();
+                paciente2.EscribirDCM(true);
                 Clipboard.SetText(@"\\ARIAMEVADB-SVR\va_data$\Pacientes\TBI\AutoPlan Import\");
                 MessageBox.Show("Se generaron los archivos dcm de ambos planes\nSe copió en el portapapeles la ruta de importación\nRecuerde calcular el plan suma con Shift+F5");
 
