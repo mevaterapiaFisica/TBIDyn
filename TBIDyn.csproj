@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{2F7EC8B4-3322-40EA-851B-E539A9ECBCDC}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <OutputType>WinExe</OutputType>
     <RootNamespace>TBIDyn</RootNamespace>
     <AssemblyName>TBIDyn</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>

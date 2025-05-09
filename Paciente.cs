@@ -105,19 +105,19 @@ namespace TBIDyn
 
         public string ToStringRegion1()
         {
-            return med_1.ToString() + "," + sd_1.ToString() + "," + perc80_1.ToString() + "," + perc20_1.ToString() + asim_1.ToString();
+            return med_1.ToString() + "," + sd_1.ToString() + "," + perc80_1.ToString() + "," + perc20_1.ToString() + "," + asim_1.ToString();
         }
         public string ToStringRegion2()
         {
-            return med_2.ToString() + "," + sd_2.ToString() + "," + perc80_2.ToString() + "," + perc20_2.ToString() + asim_2.ToString();
+            return med_2.ToString() + "," + sd_2.ToString() + "," + perc80_2.ToString() + "," + perc20_2.ToString() + "," + asim_2.ToString();
         }
         public string ToStringRegion3()
         {
-            return med_3.ToString() + "," + sd_3.ToString() + "," + perc80_3.ToString() + "," + perc20_3.ToString() + asim_3.ToString();
+            return med_3.ToString() + "," + sd_3.ToString() + "," + perc80_3.ToString() + "," + perc20_3.ToString() + "," + asim_3.ToString();
         }
         public string ToStringRegion4()
         {
-            return med_4.ToString() + "," + sd_4.ToString() + "," + perc80_4.ToString() + "," + perc20_4.ToString() + asim_4.ToString();
+            return med_4.ToString() + "," + sd_4.ToString() + "," + perc80_4.ToString() + "," + perc20_4.ToString() + "," + asim_4.ToString();
         }
 
         public void AsignarMetricas(int indice, MetricasRegion metricaRegion)
